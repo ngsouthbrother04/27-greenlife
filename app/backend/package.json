@@ -1,0 +1,37 @@
+{
+  "name": "27-greenlife",
+  "version": "1.0.0",
+  "description": "AI Agent project powered by Google Antigravity",
+  "private": true,
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "prisma": "prisma"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "google-antigravity",
+    "ecommerce"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@prisma/client": "^5.0.0",
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "helmet": "^7.0.0",
+    "jsonwebtoken": "^9.0.0",
+    "morgan": "^1.10.0",
+    "pg": "^8.11.0",
+    "zod": "^3.21.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0",
+    "prisma": "^5.0.0"
+  }
+}
