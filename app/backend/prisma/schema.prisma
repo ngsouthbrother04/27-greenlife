@@ -7,57 +7,148 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/* =====================
+   ENUMS
+===================== */
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  SHIPPING
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  MOMO
+  VNPAY
+  PAYPAL
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+/* =====================
+   MODELS
+===================== */
+
 model User {
   id        Int      @id @default(autoincrement())
+  fullName  String
   email     String   @unique
   password  String
-  name      String?
+  phone     String?
   role      Role     @default(CUSTOMER)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+
+  carts     Cart?
   orders    Order[]
+  addresses Address[]
+}
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String
+  description String?
+  parentId Int?
+  parent   Category? @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+
+  products Product[]
 }
 
 model Product {
   id          Int      @id @default(autoincrement())
   name        String
   description String?
-  price       Decimal
+  price       Decimal  @db.Decimal(10, 2)
   stock       Int
   imageUrl    String?
+  status      ProductStatus @default(ACTIVE)
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+
+  categoryId  Int
+  category    Category @relation(fields: [categoryId], references: [id])
+
+  cartItems   CartItem[]
   orderItems  OrderItem[]
+}
+
+model Cart {
+  id     Int  @id @default(autoincrement())
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id])
+
+  items  CartItem[]
+}
+
+model CartItem {
+  id        Int @id @default(autoincrement())
+  cartId   Int
+  productId Int
+  quantity Int
+  priceAtTime Decimal @db.Decimal(10,2)
+
+  cart    Cart    @relation(fields: [cartId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([cartId, productId])
 }
 
 model Order {
   id        Int      @id @default(autoincrement())
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  total     Decimal
+  total     Decimal  @db.Decimal(12,2)
   status    OrderStatus @default(PENDING)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+
+  user      User @relation(fields: [userId], references: [id])
   items     OrderItem[]
+  payment   Payment?
 }
 
 model OrderItem {
-  id        Int      @id @default(autoincrement())
+  id        Int @id @default(autoincrement())
   orderId   Int
-  order     Order    @relation(fields: [orderId], references: [id])
   productId Int
-  product   Product  @relation(fields: [productId], references: [id])
   quantity  Int
-  price     Decimal
+  price     Decimal @db.Decimal(10,2)
+
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
 }
 
-enum Role {
-  CUSTOMER
-  ADMIN
+model Address {
+  id        Int @id @default(autoincrement())
+  userId    Int
+  receiver  String
+  phone     String
+  detail    String
+  city      String
+
+  user User @relation(fields: [userId], references: [id])
 }
 
-enum OrderStatus {
-  PENDING
-  COMPLETED
-  CANCELLED
+model Payment {
+  id        Int @id @default(autoincrement())
+  orderId   Int @unique
+  method    PaymentMethod
+  amount    Decimal @db.Decimal(12,2)
+  status    PaymentStatus @default(PENDING)
+  transactionCode String?
+  paidAt    DateTime?
+
+  order Order @relation(fields: [orderId], references: [id])
 }
