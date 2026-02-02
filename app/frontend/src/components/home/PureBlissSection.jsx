@@ -1,65 +1,97 @@
 import { ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-// Import product images
-import mouthwashImg from '@/assets/images/mouthwash_product_1770003186824.png';
-import mintImg from '@/assets/images/mint_leaves_1770003240755.png';
+// Import images from Figma design
+import promoBannerBg from '@/assets/images/promo_banner_bg.png';
+import mouthwashProduct from '@/assets/images/mouthwash_product.png';
+import waterSplash from '@/assets/images/mouthwash_water_splash.png';
+import mintImg from '@/assets/images/mint.png';
+import cloveImg from '@/assets/images/clove.png';
 
+/**
+ * PureBlissSection - Promotional banner for mouthwash
+ * Design from Figma node 30:2181
+ * Features "Pure Bliss Mouthwash - Refresh Your Smile Naturally"
+ */
 const PureBlissSection = () => {
   return (
     <section className="py-16">
       <div className="container-custom">
-        <div className="relative bg-de-primary rounded-3xl overflow-hidden min-h-[400px] flex items-center">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-10 left-10 w-32 h-32 rounded-full border-2 border-white" />
-            <div className="absolute bottom-10 right-40 w-24 h-24 rounded-full border-2 border-white" />
+        <div className="relative overflow-hidden rounded-[24px] min-h-[380px]">
+          {/* Background Image */}
+          <div className="absolute inset-0">
+            <img 
+              src={promoBannerBg}
+              alt="Background"
+              className="w-full h-full object-cover"
+            />
           </div>
           
-          {/* Content */}
-          <div className="relative z-10 grid md:grid-cols-2 gap-8 items-center w-full px-8 md:px-16 py-12">
-            {/* Product Image */}
-            <div className="relative flex justify-center">
-              <div className="relative">
-                {/* Decorative mint leaves */}
-                <div className="absolute -top-8 -right-8 w-16 h-16">
-                  <img 
-                    src={mintImg}
-                    alt="mint" 
-                    className="rounded-full object-cover w-full h-full"
-                  />
-                </div>
-                <div className="absolute -bottom-6 -left-6 w-12 h-12">
-                  <img 
-                    src={mintImg}
-                    alt="clove" 
-                    className="rounded-full object-cover w-full h-full"
-                  />
-                </div>
-                
-                {/* Main Product Image */}
+          {/* Content Grid */}
+          <div className="relative z-10 flex items-center h-full min-h-[380px]">
+            {/* Left Side - Product Image with decorative elements */}
+            <div className="flex-1 relative flex justify-center items-center py-12 px-8">
+              {/* Water splash effect */}
+              <div className="absolute inset-0 flex items-center justify-center">
                 <img 
-                  src={mouthwashImg}
-                  alt="Pure Bliss Mouthwash"
-                  className="w-64 h-auto drop-shadow-2xl rounded-lg"
+                  src={waterSplash}
+                  alt="Water splash"
+                  className="w-[400px] h-auto object-contain opacity-80"
+                />
+              </div>
+              
+              {/* Main Product */}
+              <div className="relative z-10">
+                {/* Mouthwash Product */}
+                <img 
+                  src={mouthwashProduct}
+                  alt="Eco Dental Mouthwash"
+                  className="w-[200px] h-auto drop-shadow-2xl"
+                />
+                
+                {/* Mint leaves decorative */}
+                <img 
+                  src={mintImg}
+                  alt="Mint"
+                  className="absolute -bottom-4 -left-8 w-[80px] h-auto"
+                />
+                
+                {/* Clove decorative */}
+                <img 
+                  src={cloveImg}
+                  alt="Clove"
+                  className="absolute bottom-0 right-[-60px] w-[100px] h-auto"
                 />
               </div>
             </div>
             
-            {/* Text Content */}
-            <div className="text-white space-y-6">
-              <h2 className="heading-2 leading-tight">
-                Pure Bliss Mouthwash - 
-                <br />
-                Refresh Your Smile Naturally
-              </h2>
-              <p className="paragraph-1 opacity-90 max-w-md">
-                Say goodbye to harsh chemicals and hello to a naturally invigorated smile. 
-                Feel the difference of pure, organic oral care with every wash.
-              </p>
-              <button className="bg-white text-de-primary px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-all hover:shadow-lg hover:bg-gray-50">
-                Shop Now
-                <ArrowRight className="w-4 h-4" />
-              </button>
+            {/* Right Side - Text Content */}
+            <div className="flex-1 pr-12 py-12">
+              <div className="flex flex-col gap-[32px] max-w-[559px]">
+                {/* Text Content */}
+                <div className="flex flex-col gap-[13px]">
+                  {/* Heading */}
+                  <h2 className="font-bold text-[36px] leading-[54px] text-black">
+                    Pure Bliss Mouthwash - Refresh Your Smile Naturally
+                  </h2>
+                  
+                  {/* Description */}
+                  <p className="paragraph-1 text-[#494961]">
+                    Say goodbye to harsh chemicals and hello to a naturally invigorated smile. Feel the difference of pure, organic oral care with every swish.
+                  </p>
+                </div>
+                
+                {/* CTA Button */}
+                <div>
+                  <Link 
+                    to="/products?category=mouthwash"
+                    className="inline-flex items-center justify-center gap-[8px] bg-de-primary text-white px-[16px] py-[10px] rounded-[8px] h-[44px] font-semibold text-[16px] leading-[24px] transition-all hover:shadow-lg hover:bg-[#2d3e2e]"
+                  >
+                    <span>Shop Now</span>
+                    <ArrowRight className="w-[20px] h-[20px]" />
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </div>

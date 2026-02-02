@@ -1,46 +1,52 @@
 import { ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-// Import product images
-import toothbrushImg from '@/assets/images/bamboo_toothbrush_1770003204380.png';
+// Import background image from Figma design
+import heroBannerBg from '@/assets/images/hero_banner_bg.png';
 
+/**
+ * HeroSection - Main banner on homepage
+ * Design from Figma node 30:2010
+ * Features eco-friendly toothbrushes with "Echo - Friendly Smile" tagline
+ */
 const HeroSection = () => {
   return (
-    <section className="relative min-h-[600px] flex items-center overflow-hidden bg-gradient-to-br from-[#FDFBF7] via-white to-[#F5F8F5]">
-      {/* Background Image */}
-      <div 
-        className="absolute right-0 top-0 w-2/3 h-full flex items-center justify-center"
-      >
+    <section className="relative h-[540px] w-full overflow-hidden">
+      {/* Background Image - Full width banner */}
+      <div className="absolute inset-0">
         <img 
-          src={toothbrushImg}
-          alt="Eco-friendly toothbrush"
-          className="w-auto h-[80%] object-contain opacity-90 drop-shadow-2xl"
+          src={heroBannerBg}
+          alt="Eco-friendly toothbrushes"
+          className="w-full h-full object-cover"
         />
       </div>
       
-      {/* Gradient overlay for text readability */}
-      <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-transparent" />
-      
       {/* Content */}
-      <div className="container-custom relative z-10">
-        <div className="max-w-xl">
-          <h1 className="heading-2 md:heading-1 text-primary-custom mb-6">
-            Echo - Friendly Smile
-          </h1>
-          <p className="paragraph-1 text-secondary-custom mb-8 max-w-md">
-            Transform Your Dental Routine with Eco-Friendly Toothbrushes
-          </p>
-          <button className="btn-primary group">
-            <span>SHOP NOW</span>
-            <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-          </button>
+      <div className="container-custom relative z-10 h-full flex items-center">
+        <div className="pt-[135px] pb-[135px]">
+          <div className="flex flex-col gap-[8px] max-w-[689px]">
+            {/* Heading */}
+            <h1 className="heading-1 text-[#121216]">
+              Echo - Friendy Smile
+            </h1>
+            
+            {/* Subtitle */}
+            <p className="subtitle-regular text-[#494961]">
+              Transform Your Dental Routine with Eco-Friendly Toothbrushes
+            </p>
+          </div>
+          
+          {/* CTA Button */}
+          <div className="mt-[56px]">
+            <Link 
+              to="/products"
+              className="inline-flex items-center justify-center gap-[8px] bg-de-primary text-white px-[16px] py-[10px] rounded-[8px] h-[48px] min-w-[220px] font-semibold text-[16px] leading-[24px] transition-all hover:shadow-lg hover:bg-[#2d3e2e]"
+            >
+              <span>SHOP NOW</span>
+              <ArrowRight className="w-[24px] h-[24px]" />
+            </Link>
+          </div>
         </div>
-      </div>
-
-      {/* Decorative elements */}
-      <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex gap-2">
-        <span className="w-8 h-1 bg-de-primary rounded-full"></span>
-        <span className="w-8 h-1 bg-gray-300 rounded-full"></span>
-        <span className="w-8 h-1 bg-gray-300 rounded-full"></span>
       </div>
     </section>
   );

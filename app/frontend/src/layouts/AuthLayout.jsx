@@ -1,5 +1,9 @@
 import { Outlet, Link } from 'react-router-dom';
 
+/**
+ * AuthLayout - Layout for authentication pages (login, register)
+ * Provides a centered card design for auth forms
+ */
 const AuthLayout = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/40 px-4">

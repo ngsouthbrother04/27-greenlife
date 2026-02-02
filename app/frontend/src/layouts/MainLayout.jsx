@@ -1,6 +1,7 @@
 import { Outlet, Link, NavLink } from 'react-router-dom';
 import { ShoppingCart, MapPin, ChevronDown, Menu, X } from 'lucide-react';
 import { useState } from 'react';
+import { useCartStore } from '@/stores';
 
 const navLinks = [
   { name: 'Home', path: '/' },
@@ -25,6 +26,9 @@ const footerLinks = {
 
 const MainLayout = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // Get cart items count from Zustand store
+  const cartItemsCount = useCartStore((state) => state.getTotalItems());
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -69,9 +73,11 @@ const MainLayout = () => {
               className="relative p-2 hover:bg-surface-light rounded-full transition-colors"
             >
               <ShoppingCart className="w-5 h-5 text-secondary-custom" />
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-de-primary text-white text-xs rounded-full flex items-center justify-center">
-                2
-              </span>
+              {cartItemsCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-de-primary text-white text-xs rounded-full flex items-center justify-center">
+                  {cartItemsCount > 99 ? '99+' : cartItemsCount}
+                </span>
+              )}
             </Link>
             
             {/* Mobile Menu Button */}
