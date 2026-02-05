@@ -1,50 +1,45 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from 'lucide-react';
-import { useState } from 'react';
+import { useCartStore } from '@/stores';
 
-// Import product images
-import toothpasteImg from '@/assets/images/natural_toothpaste_1770003224265.png';
-import toothbrushImg from '@/assets/images/bamboo_toothbrush_1770003204380.png';
-
-const initialCartItems = [
-  {
-    id: 1,
-    name: 'Natural Teeth Whitening Toothpaste - Tea tree & Charcoal',
-    price: 100,
-    quantity: 2,
-    image: toothpasteImg,
-  },
-  {
-    id: 2,
-    name: 'Organic Bamboo Toothbrush with Soft Natural Bristles',
-    price: 45,
-    quantity: 1,
-    image: toothbrushImg,
-  },
-];
-
+/**
+ * CartPage Component
+ * 
+ * B2C Flow: User reviews cart before checkout
+ * - Data is managed by Zustand global store (not local state)
+ * - Cart persists to localStorage via Zustand persist middleware
+ * - Total is calculated in realtime
+ * 
+ * Why Cart is Global State (Zustand):
+ * 1. Cart needs to be accessed from multiple components (Header badge, ProductDetail, Cart, Checkout)
+ * 2. Cart should persist across page refreshes (localStorage)
+ * 3. Cart updates need to trigger UI updates everywhere (reactive)
+ * 4. Cart is independent of server data (local-first)
+ */
 const CartPage = () => {
-  const [cartItems, setCartItems] = useState(initialCartItems);
+  const navigate = useNavigate();
+  
+  // Get cart state and actions from Zustand store
+  const items = useCartStore((state) => state.items);
+  const updateQuantity = useCartStore((state) => state.updateQuantity);
+  const removeItem = useCartStore((state) => state.removeItem);
+  const getTotalPrice = useCartStore((state) => state.getTotalPrice);
 
-  const updateQuantity = (id, delta) => {
-    setCartItems(items =>
-      items.map(item =>
-        item.id === id
-          ? { ...item, quantity: Math.max(1, item.quantity + delta) }
-          : item
-      )
-    );
-  };
-
-  const removeItem = (id) => {
-    setCartItems(items => items.filter(item => item.id !== id));
-  };
-
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const shipping = 10;
+  // Calculate totals
+  const subtotal = getTotalPrice();
+  const shipping = items.length > 0 ? 10 : 0;
   const total = subtotal + shipping;
 
-  if (cartItems.length === 0) {
+  /**
+   * Handle proceed to checkout
+   * B2C Flow: Cart -> Checkout -> Payment
+   */
+  const handleCheckout = () => {
+    navigate('/checkout');
+  };
+
+  // Empty cart state
+  if (items.length === 0) {
     return (
       <div className="py-16">
         <div className="container-custom">
@@ -52,12 +47,12 @@ const CartPage = () => {
             <div className="w-24 h-24 bg-surface-light rounded-full flex items-center justify-center mx-auto mb-6">
               <ShoppingBag className="w-12 h-12 text-de-primary" />
             </div>
-            <h1 className="heading-3 text-primary-custom mb-4">Your cart is empty</h1>
+            <h1 className="heading-3 text-primary-custom mb-4">Giỏ hàng trống</h1>
             <p className="paragraph-1 text-secondary-custom mb-8">
-              Looks like you haven't added anything to your cart yet.
+              Bạn chưa thêm sản phẩm nào vào giỏ hàng.
             </p>
             <Link to="/products" className="btn-primary">
-              Continue Shopping
+              Tiếp tục mua sắm
               <ArrowRight className="w-4 h-4 ml-2" />
             </Link>
           </div>
@@ -69,12 +64,12 @@ const CartPage = () => {
   return (
     <div className="py-8">
       <div className="container-custom">
-        <h1 className="heading-2 text-primary-custom mb-8">Shopping Cart</h1>
+        <h1 className="heading-2 text-primary-custom mb-8">Giỏ hàng</h1>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4">
-            {cartItems.map((item) => (
+            {items.map((item) => (
               <div 
                 key={item.id}
                 className="flex gap-6 bg-white rounded-2xl border border-divider p-6"
@@ -100,10 +95,10 @@ const CartPage = () => {
 
                 {/* Quantity & Actions */}
                 <div className="flex flex-col items-end justify-between">
-                  {/* Quantity */}
+                  {/* Quantity - Now using Zustand updateQuantity */}
                   <div className="flex items-center border border-divider rounded-lg">
                     <button 
-                      onClick={() => updateQuantity(item.id, -1)}
+                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
                       className="p-2 hover:bg-surface-light transition-colors"
                     >
                       <Minus className="w-4 h-4 text-secondary-custom" />
@@ -112,20 +107,20 @@ const CartPage = () => {
                       {item.quantity}
                     </span>
                     <button 
-                      onClick={() => updateQuantity(item.id, 1)}
+                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
                       className="p-2 hover:bg-surface-light transition-colors"
                     >
                       <Plus className="w-4 h-4 text-secondary-custom" />
                     </button>
                   </div>
 
-                  {/* Remove Button */}
+                  {/* Remove Button - Now using Zustand removeItem */}
                   <button 
                     onClick={() => removeItem(item.id)}
                     className="flex items-center gap-1 text-red-500 hover:text-red-600 transition-colors paragraph-2"
                   >
                     <Trash2 className="w-4 h-4" />
-                    Remove
+                    Xóa
                   </button>
                 </div>
               </div>
@@ -135,27 +130,30 @@ const CartPage = () => {
           {/* Order Summary */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl border border-divider p-6 sticky top-28">
-              <h3 className="subtitle-semibold text-primary-custom mb-6">Order Summary</h3>
+              <h3 className="subtitle-semibold text-primary-custom mb-6">Tóm tắt đơn hàng</h3>
 
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between paragraph-1 text-secondary-custom">
-                  <span>Subtotal</span>
+                  <span>Tạm tính</span>
                   <span>${subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between paragraph-1 text-secondary-custom">
-                  <span>Shipping</span>
+                  <span>Phí vận chuyển</span>
                   <span>${shipping.toFixed(2)}</span>
                 </div>
                 <div className="border-t border-divider pt-4">
                   <div className="flex justify-between subtitle-semibold text-primary-custom">
-                    <span>Total</span>
+                    <span>Tổng cộng</span>
                     <span>${total.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
 
-              <button className="w-full btn-primary py-4 mb-4">
-                Proceed to Checkout
+              <button 
+                onClick={handleCheckout}
+                className="w-full btn-primary py-4 mb-4"
+              >
+                Tiến hành thanh toán
                 <ArrowRight className="w-4 h-4 ml-2" />
               </button>
 
@@ -163,7 +161,7 @@ const CartPage = () => {
                 to="/products" 
                 className="block text-center paragraph-2 text-de-primary hover:underline"
               >
-                Continue Shopping
+                Tiếp tục mua sắm
               </Link>
             </div>
           </div>

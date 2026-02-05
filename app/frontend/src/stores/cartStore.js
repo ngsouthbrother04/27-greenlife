@@ -74,6 +74,12 @@ const useCartStore = create(
           0
         );
       },
+
+      // Get quantity of a specific item
+      getItemQuantity: (id) => {
+        const item = get().items.find((item) => item.id === id);
+        return item ? item.quantity : 0;
+      },
     }),
     {
       name: 'greenlife-cart', // localStorage key
