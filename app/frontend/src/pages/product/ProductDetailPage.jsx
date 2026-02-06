@@ -97,7 +97,7 @@ const ProductDetailPage = () => {
       name: product.name,
       price: product.price,
       image: product.images?.[0] || product.image,
-      stock: product.stock, // Store max stock info if needed
+      maxStock: product.stock, // Store max stock info if needed
     }, quantity);
     
     // Reset quantity after adding (or keep it? Usually reset to 1 or remaining)

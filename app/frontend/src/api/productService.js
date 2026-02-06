@@ -9,7 +9,8 @@ let mockProducts = [
     originalPrice: 120,
     category: 'Mouthwash',
     image: 'https://via.placeholder.com/150',
-    description: 'Natural mouthwash with peppermint essence.'
+    description: 'Natural mouthwash with peppermint essence.',
+    stock: 50
   },
   {
     id: 2,
@@ -18,7 +19,8 @@ let mockProducts = [
     originalPrice: 250,
     category: 'Toothpaste',
     image: 'https://via.placeholder.com/150',
-    description: 'Whitening toothpaste with activated charcoal.'
+    description: 'Whitening toothpaste with activated charcoal.',
+    stock: 30
   },
   {
     id: 3,
@@ -27,8 +29,19 @@ let mockProducts = [
     originalPrice: 50,
     category: 'Toothbrush',
     image: 'https://via.placeholder.com/150',
-    description: 'Eco-friendly bamboo toothbrush.'
+    description: 'Eco-friendly bamboo toothbrush.',
+    stock: 100
   },
+  {
+    id: 4,
+    name: 'Teeth Whitening',
+    price: 100,
+    originalPrice: 120,
+    category: 'Teethwhitening',
+    image: 'https://img.freepik.com/free-vector/cheerful-tooth-mouthwash-bottle-illustration_1308-182254.jpg?semt=ais_hybrid&w=740&q=80',
+    description: 'Teeth Whitening',
+    stock: 5
+  }
 ];
 
 /**
@@ -145,7 +158,7 @@ const productService = {
       const response = await axiosClient.get('/categories');
       return response.data;
     } catch (error) {
-      return ['Toothpaste', 'Toothbrush', 'Mouthwash', 'Dental Floss', 'Kits'];
+      return ['Toothpaste', 'Toothbrush', 'Mouthwash', 'Teethwhitening', 'Dental Floss', 'Kits'];
     }
   },
 
@@ -177,7 +190,8 @@ const productService = {
       id: Date.now(),
       ...productData,
       price: Number(productData.price),
-      originalPrice: Number(productData.originalPrice || 0)
+      originalPrice: Number(productData.originalPrice || 0),
+      stock: Number(productData.stock || 0)
     };
 
     mockProducts = [newProduct, ...mockProducts];

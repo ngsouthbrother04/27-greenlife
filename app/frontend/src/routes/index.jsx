@@ -1,5 +1,6 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { PublicLayout, AdminLayout, AuthLayout } from '@/layouts';
+import PrivateRoute from '@/components/PrivateRoute';
 
 // Public pages
 import HomePage from '@/pages/home/HomePage';
@@ -12,6 +13,9 @@ import CheckoutPage from '@/pages/checkout/CheckoutPage';
 import LoginPage from '@/pages/auth/LoginPage';
 import RegisterPage from '@/pages/auth/RegisterPage';
 
+// User pages
+import ProfilePage from '@/pages/profile/ProfilePage';
+
 // Admin pages
 import AdminDashboard from '@/pages/admin/AdminDashboard';
 import AdminProducts from '@/pages/admin/AdminProducts';
@@ -20,26 +24,9 @@ import AdminUsers from '@/pages/admin/AdminUsers';
 
 /**
  * Application Routes Configuration
- * 
- * B2C E-commerce flow - Public routes:
- * / - Home page with featured products
- * /products - Product listing with filters
- * /products/:id - Product detail page
- * /cart - Shopping cart
- * /checkout - Order & payment page
- * 
- * Auth routes:
- * /auth/login - User login
- * /auth/register - User registration
- * 
- * Admin routes:
- * /admin - Dashboard overview
- * /admin/products - Product management
- * /admin/orders - Order management
- * /admin/users - User management
  */
 const router = createBrowserRouter([
-  // Public routes - với Header & Footer
+  // Public routes
   {
     path: "/",
     element: <PublicLayout />,
@@ -52,25 +39,45 @@ const router = createBrowserRouter([
     ]
   },
   
-  // Auth routes - layout riêng cho đăng nhập/đăng ký
+  // Auth routes
   {
     path: '/auth',
     element: <AuthLayout />,
     children: [
       { path: 'login', element: <LoginPage /> },
-      { path: 'register', element: <RegisterPage /> }
+      { path: 'register', element: <RegisterPage /> },
+      // Redirect /auth to /auth/login
+      { index: true, element: <Navigate to="/auth/login" replace /> }
     ]
   },
   
-  // Admin routes - layout tối giản cho quản trị
+  // Protected User Routes
+  {
+    element: <PrivateRoute />, // Protects routes for ANY authenticated user
+    children: [
+      {
+         element: <PublicLayout />, // Re-use Public Layout (Header/Footer)
+         children: [
+           { path: '/profile', element: <ProfilePage /> },
+         ]
+      }
+    ]
+  },
+
+  // Admin routes - Protected
   {
     path: '/admin',
-    element: <AdminLayout />,
+    element: <PrivateRoute allowedRoles={['admin']} />, // Protect all admin routes
     children: [
-      { index: true, element: <AdminDashboard /> },
-      { path: 'products', element: <AdminProducts /> },
-      { path: 'orders', element: <AdminOrders /> },
-      { path: 'users', element: <AdminUsers /> },
+      {
+        element: <AdminLayout />,
+        children: [
+          { index: true, element: <AdminDashboard /> },
+          { path: 'products', element: <AdminProducts /> },
+          { path: 'orders', element: <AdminOrders /> },
+          { path: 'users', element: <AdminUsers /> },
+        ]
+      }
     ]
   },
   

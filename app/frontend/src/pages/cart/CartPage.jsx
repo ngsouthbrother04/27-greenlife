@@ -96,22 +96,34 @@ const CartPage = () => {
                 {/* Quantity & Actions */}
                 <div className="flex flex-col items-end justify-between">
                   {/* Quantity - Now using Zustand updateQuantity */}
-                  <div className="flex items-center border border-divider rounded-lg">
-                    <button 
-                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                      className="p-2 hover:bg-surface-light transition-colors"
-                    >
-                      <Minus className="w-4 h-4 text-secondary-custom" />
-                    </button>
-                    <span className="w-10 text-center paragraph-2-medium text-primary-custom">
-                      {item.quantity}
-                    </span>
-                    <button 
-                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                      className="p-2 hover:bg-surface-light transition-colors"
-                    >
-                      <Plus className="w-4 h-4 text-secondary-custom" />
-                    </button>
+                  <div className="flex flex-col items-end gap-1">
+                    <div className="flex items-center border border-divider rounded-lg">
+                      <button 
+                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        className="p-2 hover:bg-surface-light transition-colors"
+                      >
+                        <Minus className="w-4 h-4 text-secondary-custom" />
+                      </button>
+                      <span className="w-10 text-center paragraph-2-medium text-primary-custom">
+                        {item.quantity}
+                      </span>
+                      <button 
+                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        className={`p-2 transition-colors ${
+                          (item.maxStock || item.stock) && item.quantity >= (item.maxStock || item.stock)
+                            ? 'opacity-50 cursor-not-allowed bg-gray-50' 
+                            : 'hover:bg-surface-light'
+                        }`}
+                        disabled={(item.maxStock || item.stock) && item.quantity >= (item.maxStock || item.stock)}
+                      >
+                        <Plus className="w-4 h-4 text-secondary-custom" />
+                      </button>
+                    </div>
+                    {(item.maxStock || item.stock) && item.quantity >= (item.maxStock || item.stock) && (
+                      <span className="text-xs text-orange-500 font-medium whitespace-nowrap">
+                        Max stock: {item.maxStock || item.stock}
+                      </span>
+                    )}
                   </div>
 
                   {/* Remove Button - Now using Zustand removeItem */}
