@@ -7,6 +7,7 @@ import { useCartStore } from '@/stores';
 import orderService from '@/api/orderService';
 import { Loader2, ArrowLeft, ShieldCheck, Truck, CreditCard, Banknote } from 'lucide-react';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 
 // Validation Schema
 const checkoutSchema = z.object({
@@ -68,12 +69,12 @@ const Checkout = () => {
         // Mock redirect for demo purposes
         window.location.href = response.paymentUrl;
       } else {
-        alert('Order placed successfully! (COD)');
+        toast.success('Đặt hàng thành công! (COD)');
         navigate('/');
       }
     } catch (error) {
       console.error('Checkout error:', error);
-      alert('Failed to place order. Please try again.');
+      toast.error('Đặt hàng thất bại. Vui lòng thử lại.');
     } finally {
       setIsSubmitting(false);
     }

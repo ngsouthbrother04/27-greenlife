@@ -36,7 +36,7 @@ const router = createBrowserRouter([
       { path: 'products', element: <ProductListPage /> },
       { path: 'products/:id', element: <ProductDetailPage /> },
       { path: 'cart', element: <CartPage /> },
-      { path: 'checkout', element: <CheckoutPage /> },
+
     ]
   },
   
@@ -60,6 +60,7 @@ const router = createBrowserRouter([
          element: <PublicLayout />, // Re-use Public Layout (Header/Footer)
          children: [
            { path: '/profile', element: <ProfilePage /> },
+           { path: '/checkout', element: <CheckoutPage /> },
          ]
       }
     ]

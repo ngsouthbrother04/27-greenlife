@@ -1,4 +1,5 @@
 import React from 'react';
+import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -39,11 +40,11 @@ const ProfilePage = () => {
         name: variables.name,
         address: variables.address
       });
-      alert('Profile updated successfully!');
+      toast.success('Profile updated successfully!');
     },
     onError: (error) => {
       console.error(error);
-      alert('Failed to update profile.');
+      toast.error('Failed to update profile.');
     },
   });
 

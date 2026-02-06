@@ -6,6 +6,7 @@ import {
   Plus, Search, Edit, Trash2, 
   Loader2, Tags, X 
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import categoryService from '@/api/categoryService';
 
@@ -36,7 +37,7 @@ const AdminCategories = () => {
     onSuccess: () => {
       queryClient.invalidateQueries(['categories']);
       handleCloseModal();
-      alert('Thêm danh mục thành công');
+      toast.success('Thêm danh mục thành công');
     },
   });
 
@@ -45,7 +46,7 @@ const AdminCategories = () => {
     onSuccess: () => {
       queryClient.invalidateQueries(['categories']);
       handleCloseModal();
-      alert('Cập nhật danh mục thành công');
+      toast.success('Cập nhật danh mục thành công');
     },
   });
 
@@ -55,7 +56,7 @@ const AdminCategories = () => {
       queryClient.invalidateQueries(['categories']);
       setIsDeleteModalOpen(false);
       setCategoryToDelete(null);
-      alert('Xóa danh mục thành công');
+      toast.success('Xóa danh mục thành công');
     },
   });
 

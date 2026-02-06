@@ -25,8 +25,25 @@ const useCartStore = create(
         const maxStock = product.stock || 0;
 
         if (currentQty + quantity > maxStock) {
-          // Return failure info for UI to handle (e.g. show toast)
-          return { success: false, message: `Chỉ còn ${maxStock} sản phẩm trong kho` };
+          const remaining = maxStock - currentQty;
+          if (remaining > 0) {
+            // Add only what's left
+            if (existingItem) {
+              set({
+                items: items.map((item) =>
+                  item.id === product.id
+                    ? { ...item, quantity: maxStock } // Set to max
+                    : item
+                ),
+              });
+            } else {
+              set({
+                items: [...items, { ...product, quantity: remaining }],
+              });
+            }
+            return { success: true, message: `Đã thêm ${remaining} sản phẩm còn lại vào giỏ (kho hết hàng)` };
+          }
+          return { success: false, message: `Sản phẩm đã hết hàng trong kho` };
         }
 
         if (existingItem) {

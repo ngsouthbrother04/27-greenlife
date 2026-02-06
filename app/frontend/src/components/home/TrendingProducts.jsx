@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import { useCartStore } from '@/stores';
 import ProductCard from '../products/ProductCard';
 
@@ -105,7 +106,7 @@ const TrendingProducts = () => {
     if (!product) return;
     
     if (product.stock <= 0) {
-      alert("Sản phẩm này đã hết hàng.");
+      toast.error("Sản phẩm này đã hết hàng.");
       return;
     }
 
@@ -118,9 +119,9 @@ const TrendingProducts = () => {
     });
 
     if (result.success) {
-      alert(`Đã thêm "${product.name}" vào giỏ hàng`);
+      toast.success(`Đã thêm "${product.name}" vào giỏ hàng`);
     } else {
-      alert(result.message || 'Không thể thêm vào giỏ hàng');
+      toast.error(result.message || 'Không thể thêm vào giỏ hàng');
     }
   };
 

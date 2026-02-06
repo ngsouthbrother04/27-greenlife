@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -50,7 +51,7 @@ const LoginPage = () => {
     },
     onError: (error) => {
       console.error('Login failed:', error);
-      // Ideally handle error display (toast or alert)
+      toast.error(error.response?.data?.message || 'Login failed. Please check your credentials.');
     }
   });
 

@@ -5,6 +5,7 @@ import { Filter, Loader2, SearchX } from 'lucide-react';
 import { useProducts } from '@/hooks';
 import { useCartStore } from '@/stores';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 
 // Import product images for fallback data
 import mouthwashImg from '@/assets/images/mouthwash_product_1770003186824.png';
@@ -126,7 +127,7 @@ const ProductListPage = () => {
     const product = products.find(p => p.id === productId);
     if (product) {
       if (product.stock <= 0) {
-        alert("Sản phẩm này đã hết hàng.");
+        toast.error("Sản phẩm này đã hết hàng.");
         return;
       }
       const result = addItem({
@@ -138,9 +139,9 @@ const ProductListPage = () => {
       });
       
       if (result.success) {
-          alert(`Đã thêm "${product.name}" vào giỏ hàng`);
+          toast.success(`Đã thêm "${product.name}" vào giỏ hàng`);
       } else {
-          alert(result.message || 'Không thể thêm vào giỏ hàng');
+          toast.error(result.message || 'Không thể thêm vào giỏ hàng');
       }
     }
   };

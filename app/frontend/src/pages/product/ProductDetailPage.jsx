@@ -3,6 +3,7 @@ import { Star, ShoppingCart, Heart, Minus, Plus, ChevronRight, Loader2, AlertCir
 import { useState, useEffect } from 'react';
 import { useProduct } from '@/hooks';
 import { useCartStore } from '@/stores';
+import toast from 'react-hot-toast';
 
 // Import product images for fallback
 import mouthwashImg from '@/assets/images/mouthwash_product_1770003186824.png';
@@ -31,7 +32,7 @@ const ProductDetailPage = () => {
 
   // Mock product data as fallback (when API not available)
   const fallbackProduct = {
-    id,
+    id: Number(id),
     name: 'Natural Teeth Whitening Toothpaste - Tea tree & Charcoal',
     price: 100,
     originalPrice: 150,
@@ -93,7 +94,7 @@ const ProductDetailPage = () => {
     if (quantity > availableStock) return;
 
     const result = addItem({
-      id: product.id,
+      id: Number(product.id),
       name: product.name,
       price: product.price,
       image: product.images?.[0] || product.image,
@@ -103,10 +104,9 @@ const ProductDetailPage = () => {
     if (result.success) {
         // Reset quantity after adding
         setQuantity(1);
-        // TODO: Replace with better UI feedback
-        alert(`Đã thêm ${quantity} sản phẩm vào giỏ hàng`);
+        toast.success(`Đã thêm ${quantity} sản phẩm vào giỏ hàng`);
     } else {
-        alert(result.message || 'Không thể thêm vào giỏ hàng');
+        toast.error(result.message || 'Không thể thêm vào giỏ hàng');
     }
   };
 
