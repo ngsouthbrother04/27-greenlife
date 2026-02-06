@@ -1,16 +1,10 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, ChevronDown, Menu, X, Search, LogOut, Settings } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, Search, LogOut, Settings } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useCartStore, useAuthStore } from '@/stores';
 import SearchBar from './SearchBar';
+import CategoryMenu from './CategoryMenu';
 import logo from '@/assets/logo.png';
-
-const navLinks = [
-  { name: 'Home', path: '/' },
-  { name: 'Teeth Whitening', path: '/products?category=whitening', hasDropdown: true },
-  { name: 'Toothpaste', path: '/products?category=toothpaste', hasDropdown: true },
-  { name: 'Mouthwash', path: '/products?category=mouthwash', hasDropdown: true },
-];
 
 /**
  * Header Component
@@ -19,6 +13,7 @@ const navLinks = [
  * - Cart Badge
  * - Authenticated User Menu (Profile, Logout)
  * - Expandable Search Bar
+ * - Dynamic Categories
  */
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -42,8 +37,6 @@ const Header = () => {
       }
       if (searchRef.current && !searchRef.current.contains(event.target)) {
         // Only close search if it's open and click is outside
-        // Optional: you might want search to stay open until closed manually
-        // setSearchOpen(false); 
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -69,22 +62,34 @@ const Header = () => {
         {/* Desktop Navigation */}
         {!searchOpen && (
           <nav className="hidden lg:flex items-center gap-10">
-            {navLinks.map((link) => (
-              <NavLink
-                key={link.name}
-                to={link.path}
-                className={({ isActive }) =>
-                  `flex items-center gap-2 font-['Poppins'] text-[16px] leading-[24px] font-medium transition-colors ${
+            <NavLink
+              to="/"
+              className={({ isActive }) =>
+                `flex items-center gap-2 font-['Poppins'] text-[16px] leading-[24px] font-medium transition-colors ${
+                  isActive 
+                    ? 'text-[#405741] opacity-100' 
+                    : 'text-[#494961] opacity-70 hover:opacity-100'
+                }`
+              }
+            >
+              Home
+            </NavLink>
+            
+            {/* Dynamic Category Menu */}
+            <CategoryMenu />
+            
+            <NavLink
+              to="/products"
+              className={({ isActive }) =>
+                `flex items-center gap-2 font-['Poppins'] text-[16px] leading-[24px] font-medium transition-colors ${
                     isActive 
                       ? 'text-[#405741] opacity-100' 
                       : 'text-[#494961] opacity-70 hover:opacity-100'
-                  }`
-                }
-              >
-                {link.name}
-                {link.hasDropdown && <ChevronDown className="w-4 h-4" />}
-              </NavLink>
-            ))}
+                }`
+              }
+            >
+              All Products
+            </NavLink>
           </nav>
         )}
 
@@ -224,20 +229,32 @@ const Header = () => {
              <SearchBar />
           </div>
 
-          {navLinks.map((link) => (
-            <NavLink
-              key={link.name}
-              to={link.path}
-              onClick={() => setMobileMenuOpen(false)}
-              className={({ isActive }) =>
-                `block py-3 px-4 rounded-lg font-['Poppins'] font-medium transition-colors ${
-                  isActive ? 'bg-surface-light text-de-primary' : 'text-[#494961] hover:bg-surface-light'
-                }`
-              }
-            >
-              {link.name}
-            </NavLink>
-          ))}
+          <NavLink
+            to="/"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) =>
+              `block py-3 px-4 rounded-lg font-['Poppins'] font-medium transition-colors ${
+                isActive ? 'bg-surface-light text-de-primary' : 'text-[#494961] hover:bg-surface-light'
+              }`
+            }
+          >
+            Home
+          </NavLink>
+
+          {/* Dynamic Mobile Categories */}
+          <CategoryMenu mobile onItemClick={() => setMobileMenuOpen(false)} />
+
+           <NavLink
+            to="/products"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) =>
+              `block py-3 px-4 rounded-lg font-['Poppins'] font-medium transition-colors ${
+                isActive ? 'bg-surface-light text-de-primary' : 'text-[#494961] hover:bg-surface-light'
+              }`
+            }
+          >
+            All Products
+          </NavLink>
           
           <div className="border-t border-gray-100 my-2 pt-2">
             {isAuthenticated() ? (

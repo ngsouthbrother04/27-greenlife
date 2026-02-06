@@ -126,17 +126,22 @@ const ProductListPage = () => {
     const product = products.find(p => p.id === productId);
     if (product) {
       if (product.stock <= 0) {
-        alert("This item is out of stock.");
+        alert("Sản phẩm này đã hết hàng.");
         return;
       }
-      addItem({
+      const result = addItem({
         id: product.id,
         name: product.name,
         price: product.price,
         image: product.image,
-        maxStock: product.stock,
+        stock: product.stock,
       });
-      console.log('Added to cart:', product.name);
+      
+      if (result.success) {
+          alert(`Đã thêm "${product.name}" vào giỏ hàng`);
+      } else {
+          alert(result.message || 'Không thể thêm vào giỏ hàng');
+      }
     }
   };
 

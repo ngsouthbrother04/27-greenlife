@@ -92,19 +92,22 @@ const ProductDetailPage = () => {
   const handleAddToCart = () => {
     if (quantity > availableStock) return;
 
-    addItem({
+    const result = addItem({
       id: product.id,
       name: product.name,
       price: product.price,
       image: product.images?.[0] || product.image,
-      maxStock: product.stock, // Store max stock info if needed
+      stock: product.stock, // IMPORTANT: Ensure stock is passed to store for validation
     }, quantity);
     
-    // Reset quantity after adding (or keep it? Usually reset to 1 or remaining)
-    setQuantity(1);
-    
-    // Show success feedback (could be a toast notification)
-    console.log(`Added ${quantity} x ${product.name} to cart`);
+    if (result.success) {
+        // Reset quantity after adding
+        setQuantity(1);
+        // TODO: Replace with better UI feedback
+        alert(`Đã thêm ${quantity} sản phẩm vào giỏ hàng`);
+    } else {
+        alert(result.message || 'Không thể thêm vào giỏ hàng');
+    }
   };
 
   // Loading state

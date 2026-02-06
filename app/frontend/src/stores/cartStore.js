@@ -21,6 +21,13 @@ const useCartStore = create(
       addItem: (product, quantity = 1) => {
         const items = get().items;
         const existingItem = items.find((item) => item.id === product.id);
+        const currentQty = existingItem ? existingItem.quantity : 0;
+        const maxStock = product.stock || 0;
+
+        if (currentQty + quantity > maxStock) {
+          // Return failure info for UI to handle (e.g. show toast)
+          return { success: false, message: `Chỉ còn ${maxStock} sản phẩm trong kho` };
+        }
 
         if (existingItem) {
           set({
@@ -35,6 +42,7 @@ const useCartStore = create(
             items: [...items, { ...product, quantity }],
           });
         }
+        return { success: true };
       },
 
       // Remove item from cart
@@ -48,13 +56,27 @@ const useCartStore = create(
       updateQuantity: (productId, quantity) => {
         if (quantity <= 0) {
           get().removeItem(productId);
-          return;
+          return { success: true };
         }
+
+        const items = get().items;
+        const item = items.find(i => i.id === productId);
+        if (!item) return { success: false, message: 'Sản phẩm không tồn tại trong giỏ' };
+
+        // Note: item.stock might be stale if we don't refresh it, 
+        // but for now we rely on the product object stored in cart having the stock. 
+        // Ideally we should sync with backend, but per rules we use store state.
+        // If product object in cart has stock:
+        if (quantity > (item.stock || 0)) {
+          return { success: false, message: `Chỉ còn ${item.stock} sản phẩm trong kho` };
+        }
+
         set({
-          items: get().items.map((item) =>
+          items: items.map((item) =>
             item.id === productId ? { ...item, quantity } : item
           ),
         });
+        return { success: true };
       },
 
       // Clear all items (after successful checkout)

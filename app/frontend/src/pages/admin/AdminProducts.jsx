@@ -17,6 +17,7 @@ const productSchema = z.object({
   price: z.number().min(0, 'Giá phải lớn hơn hoặc bằng 0'),
   originalPrice: z.number().min(0, 'Giá gốc phải lớn hơn hoặc bằng 0').optional(),
   category: z.string().min(1, 'Vui lòng chọn danh mục'),
+  stock: z.number().int('Tồn kho phải là số nguyên').min(0, 'Tồn kho phải lớn hơn hoặc bằng 0'),
   description: z.string().min(10, 'Mô tả phải có ít nhất 10 ký tự'),
   image: z.string().url('URL hình ảnh không hợp lệ').or(z.literal('')),
 });
@@ -55,6 +56,7 @@ const AdminProducts = () => {
       name: '',
       price: 0,
       originalPrice: 0,
+      stock: 0,
       category: '',
       description: '',
       image: '',
@@ -75,6 +77,7 @@ const AdminProducts = () => {
       setValue('name', product.name);
       setValue('price', product.price);
       setValue('originalPrice', product.originalPrice || 0);
+      setValue('stock', product.stock || 0);
       setValue('category', product.category || '');
       setValue('description', product.description || '');
       setValue('image', product.image || '');
@@ -84,6 +87,7 @@ const AdminProducts = () => {
         name: '',
         price: 0,
         originalPrice: 0,
+        stock: 0,
         category: '',
         description: '',
         image: '',
@@ -177,6 +181,7 @@ const AdminProducts = () => {
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-secondary-custom uppercase tracking-wider">Sản phẩm</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-secondary-custom uppercase tracking-wider">Danh mục</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-secondary-custom uppercase tracking-wider">Kho</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-secondary-custom uppercase tracking-wider">Giá</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-secondary-custom uppercase tracking-wider">Trạng thái</th>
                   <th className="px-6 py-4 text-right text-xs font-semibold text-secondary-custom uppercase tracking-wider">Thao tác</th>
@@ -211,6 +216,9 @@ const AdminProducts = () => {
                       </td>
                       <td className="px-6 py-4 text-sm text-secondary-custom">
                         {product.category || 'Chưa phân loại'}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-secondary-custom">
+                        {product.stock || 0}
                       </td>
                       <td className="px-6 py-4 text-sm font-medium text-primary-custom">
                         ${product.price}
@@ -295,6 +303,18 @@ const AdminProducts = () => {
                     placeholder="0.00"
                   />
                   {errors.originalPrice && <p className="text-red-500 text-xs mt-1">{errors.originalPrice.message}</p>}
+                </div>
+
+                <div>
+                  <label className="label mb-2 block">Tồn kho *</label>
+                  <input
+                    {...register('stock', { valueAsNumber: true })}
+                    type="number"
+                    min="0"
+                    className="input-field w-full"
+                    placeholder="0"
+                  />
+                  {errors.stock && <p className="text-red-500 text-xs mt-1">{errors.stock.message}</p>}
                 </div>
 
                 <div className="col-span-2">

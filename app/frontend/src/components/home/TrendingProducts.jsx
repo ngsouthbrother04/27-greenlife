@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useCartStore } from '@/stores';
 import ProductCard from '../products/ProductCard';
 
 // Import icons
@@ -18,6 +19,7 @@ const products = [
     originalPrice: 120,
     rating: 4.5,
     image: mouthwashImg,
+    stock: 50,
   },
   {
     id: 2,
@@ -26,6 +28,7 @@ const products = [
     originalPrice: 150,
     rating: 4.8,
     image: toothpasteImg,
+    stock: 20,
   },
   {
     id: 3,
@@ -34,6 +37,7 @@ const products = [
     originalPrice: 130,
     rating: 4.6,
     image: toothbrushImg,
+    stock: 100,
   },
   {
     id: 4,
@@ -42,6 +46,7 @@ const products = [
     originalPrice: 140,
     rating: 4.7,
     image: mouthwashImg,
+    stock: 0,
   },
   {
     id: 5,
@@ -50,6 +55,7 @@ const products = [
     originalPrice: 120,
     rating: 4.5,
     image: mouthwashImg,
+    stock: 50,
   },
   {
     id: 6,
@@ -58,6 +64,7 @@ const products = [
     originalPrice: 150,
     rating: 4.8,
     image: toothpasteImg,
+    stock: 25,
   },
   {
     id: 7,
@@ -66,6 +73,7 @@ const products = [
     originalPrice: 130,
     rating: 4.6,
     image: toothbrushImg,
+    stock: 40,
   },
   {
     id: 8,
@@ -74,6 +82,7 @@ const products = [
     originalPrice: 140,
     rating: 4.7,
     image: mouthwashImg,
+    stock: 10,
   },
 ];
 
@@ -89,9 +98,30 @@ const TrendingProducts = () => {
     setStartIndex(prev => Math.min(products.length - visibleProducts, prev + 1));
   };
 
+  const addItem = useCartStore((state) => state.addItem);
+
   const handleAddToCart = (productId) => {
-    console.log('Add to cart:', productId);
-    // TODO: Implement cart functionality
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    
+    if (product.stock <= 0) {
+      alert("Sản phẩm này đã hết hàng.");
+      return;
+    }
+
+    const result = addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      stock: product.stock,
+    });
+
+    if (result.success) {
+      alert(`Đã thêm "${product.name}" vào giỏ hàng`);
+    } else {
+      alert(result.message || 'Không thể thêm vào giỏ hàng');
+    }
   };
 
   return (
