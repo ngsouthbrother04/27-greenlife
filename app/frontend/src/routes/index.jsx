@@ -21,6 +21,7 @@ import AdminDashboard from '@/pages/admin/AdminDashboard';
 import AdminProducts from '@/pages/admin/AdminProducts';
 import AdminOrders from '@/pages/admin/AdminOrders';
 import AdminUsers from '@/pages/admin/AdminUsers';
+import AdminCategories from '@/pages/admin/AdminCategories';
 
 /**
  * Application Routes Configuration
@@ -74,6 +75,7 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <AdminDashboard /> },
           { path: 'products', element: <AdminProducts /> },
+          { path: 'categories', element: <AdminCategories /> },
           { path: 'orders', element: <AdminOrders /> },
           { path: 'users', element: <AdminUsers /> },
         ]

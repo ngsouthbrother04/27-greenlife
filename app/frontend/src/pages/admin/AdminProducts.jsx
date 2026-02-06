@@ -6,6 +6,8 @@ import {
   Plus, Search, Edit, Trash2, MoreHorizontal, 
   Loader2, Image as ImageIcon, X 
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import categoryService from '@/api/categoryService';
 import { 
   useProducts, 
   useAdminProducts 
@@ -32,6 +34,11 @@ const AdminProducts = () => {
   // Data Fetching
   const { data: productsData, isLoading } = useProducts();
   const products = productsData?.products || productsData || []; // Handle different API response structures
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: categoryService.getCategories,
+  });
 
   // Mutations
   const { 
@@ -321,11 +328,11 @@ const AdminProducts = () => {
                   <label className="label mb-2 block">Danh mục *</label>
                   <select {...register('category')} className="input-field w-full">
                     <option value="">Chọn danh mục</option>
-                    <option value="Toothpaste">Toothpaste</option>
-                    <option value="Toothbrush">Toothbrush</option>
-                    <option value="Mouthwash">Mouthwash</option>
-                    <option value="Dental Floss">Dental Floss</option>
-                    <option value="Kits">Kits</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.slug}>
+                        {cat.name}
+                      </option>
+                    ))}
                   </select>
                   {errors.category && <p className="text-red-500 text-xs mt-1">{errors.category.message}</p>}
                 </div>

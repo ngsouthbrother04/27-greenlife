@@ -37,7 +37,7 @@ let mockProducts = [
     name: 'Teeth Whitening',
     price: 100,
     originalPrice: 120,
-    category: 'Teethwhitening',
+    category: 'teeth-whitening',
     image: 'https://img.freepik.com/free-vector/cheerful-tooth-mouthwash-bottle-illustration_1308-182254.jpg?semt=ais_hybrid&w=740&q=80',
     description: 'Teeth Whitening',
     stock: 5
@@ -57,8 +57,7 @@ const productService = {
   getProducts: async (params = {}) => {
     // Try to fetch from API, if fail use mock data
     try {
-      // Intentionally verify connection first
-      await axiosClient.get('/', { timeout: 1000 });
+      // Direct call without artificial connection check
       const response = await axiosClient.get('/products', { params });
       return response.data;
     } catch (error) {
@@ -129,7 +128,7 @@ const productService = {
    */
   getProductById: async (id) => {
     try {
-      const response = await axiosClient.get(`/products/${id}`);
+      const response = await axiosClient.get(`/products/${id}`, { timeout: 2000 });
       return response.data;
     } catch (error) {
       const product = mockProducts.find(p => p.id === Number(id));
@@ -143,7 +142,7 @@ const productService = {
    */
   getFeaturedProducts: async (limit = 8) => {
     try {
-      const response = await axiosClient.get('/products/featured', { params: { limit } });
+      const response = await axiosClient.get('/products/featured', { params: { limit }, timeout: 2000 });
       return response.data;
     } catch (error) {
       return mockProducts.slice(0, limit);
@@ -155,7 +154,7 @@ const productService = {
    */
   getCategories: async () => {
     try {
-      const response = await axiosClient.get('/categories');
+      const response = await axiosClient.get('/categories', { timeout: 2000 });
       return response.data;
     } catch (error) {
       return ['Toothpaste', 'Toothbrush', 'Mouthwash', 'Teethwhitening', 'Dental Floss', 'Kits'];
@@ -168,7 +167,8 @@ const productService = {
   searchProducts: async (keyword) => {
     try {
       const response = await axiosClient.get('/products/search', {
-        params: { q: keyword }
+        params: { q: keyword },
+        timeout: 2000
       });
       return response.data;
     } catch (error) {
@@ -184,7 +184,7 @@ const productService = {
     console.log('API Create Product:', productData);
 
     // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     const newProduct = {
       id: Date.now(),
@@ -201,7 +201,7 @@ const productService = {
   updateProduct: async (id, productData) => {
     console.log('API Update Product:', id, productData);
 
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     const index = mockProducts.findIndex(p => p.id === id);
     if (index !== -1) {
@@ -214,7 +214,7 @@ const productService = {
   deleteProduct: async (id) => {
     console.log('API Delete Product:', id);
 
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     const initialLength = mockProducts.length;
     mockProducts = mockProducts.filter(p => p.id !== id);

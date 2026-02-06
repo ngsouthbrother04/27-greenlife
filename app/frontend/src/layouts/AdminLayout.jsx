@@ -6,7 +6,8 @@ import {
   Users, 
   LogOut,
   Menu,
-  X
+  X,
+  Tags
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -16,6 +17,7 @@ import { useState } from 'react';
 const adminNavLinks = [
   { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
   { name: 'Sản phẩm', path: '/admin/products', icon: Package },
+  { name: 'Danh mục', path: '/admin/categories', icon: Tags },
   { name: 'Đơn hàng', path: '/admin/orders', icon: ShoppingCart },
   { name: 'Người dùng', path: '/admin/users', icon: Users },
 ];
