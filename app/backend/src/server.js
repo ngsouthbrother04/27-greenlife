@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import app from './app.js';
+import app from './app.js';
 import prisma from './utils/db.js';
+import { seedAdmin } from './services/auth.service.js';
 
 const PORT = process.env.PORT || 3000;
 
@@ -8,7 +10,11 @@ async function startServer() {
   try {
     // Attempt to connect to the database
     await prisma.$connect();
+    await prisma.$connect();
     console.log('✅ Database connected successfully');
+
+    // Seed Admin
+    await seedAdmin();
 
     const server = app.listen(PORT, () => {
       console.log(`✅ Server running on port ${PORT}`);

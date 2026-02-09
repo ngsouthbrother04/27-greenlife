@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import { errorHandlingMiddleware } from './middlewares/errorHandlingMiddleware.js';
+import routes from './routes/index.js';
 
 const app = express();
 
@@ -17,8 +19,8 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is running' });
 });
 
-// Routes (Mounting will happen here later)
-// app.use('/api/v1', routes);
+// Routes
+app.use('/api/v1', routes);
 
 // 404 Handler
 app.use((req, res, next) => {
@@ -29,14 +31,6 @@ app.use((req, res, next) => {
 });
 
 // Global Error Handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  const statusCode = err.statusCode || 500;
-  res.status(statusCode).json({
-    status: 'error',
-    message: err.message || 'Internal Server Error',
-    stack: process.env.NODE_ENV === 'production' ? undefined : err.stack
-  });
-});
+app.use(errorHandlingMiddleware);
 
 export default app;
