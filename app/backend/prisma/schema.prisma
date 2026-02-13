@@ -7,9 +7,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/* =====================
-   ENUMS
-===================== */
+// =====================
+//    ENUMS
+// =====================
 enum Role {
   CUSTOMER
   ADMIN
@@ -24,6 +24,7 @@ enum OrderStatus {
   PENDING
   PAID
   SHIPPING
+  DELIVERED
   COMPLETED
   CANCELLED
 }
@@ -32,6 +33,7 @@ enum PaymentMethod {
   MOMO
   VNPAY
   PAYPAL
+  COD
 }
 
 enum PaymentStatus {
@@ -40,9 +42,9 @@ enum PaymentStatus {
   FAILED
 }
 
-/* =====================
-   MODELS
-===================== */
+// =====================
+//    MODELS
+// =====================
 
 model User {
   id        Int      @id @default(autoincrement())
@@ -52,54 +54,73 @@ model User {
   phone     String?
   role      Role     @default(CUSTOMER)
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  carts     Cart?
+  cart      Cart?
   orders    Order[]
   addresses Address[]
+  reviews   Review[]
 }
 
 model Category {
-  id       Int       @id @default(autoincrement())
-  name     String
-  description String?
-  parentId Int?
-  parent   Category? @relation("CategoryTree", fields: [parentId], references: [id])
-  children Category[] @relation("CategoryTree")
-
-  products Product[]
-}
-
-model Product {
   id          Int      @id @default(autoincrement())
   name        String
   description String?
-  price       Decimal  @db.Decimal(10, 2)
-  stock       Int
-  imageUrl    String?
-  status      ProductStatus @default(ACTIVE)
-  createdAt   DateTime @default(now())
+  slug        String   @unique
+  parentId    Int?
+  
+  parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryTree")
+  products    Product[]
+}
 
-  categoryId  Int
-  category    Category @relation(fields: [categoryId], references: [id])
+model Product {
+  id            Int           @id @default(autoincrement())
+  name          String
+  slug          String        @unique
+  description   String?
+  price         Decimal       @db.Decimal(10, 2)
+  stock         Int           @default(0)
+  images        String[]      // Replaced single imageUrl with array
+  averageRating Float         @default(0)
+  status        ProductStatus @default(ACTIVE)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
-  cartItems   CartItem[]
-  orderItems  OrderItem[]
+  categoryId    Int
+  category      Category      @relation(fields: [categoryId], references: [id])
+
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
+  reviews       Review[]
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  productId Int
+  rating    Int      @default(5)
+  comment   String?
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
 }
 
 model Cart {
-  id     Int  @id @default(autoincrement())
-  userId Int  @unique
-  user   User @relation(fields: [userId], references: [id])
-
-  items  CartItem[]
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  updatedAt DateTime @updatedAt
+  
+  user      User     @relation(fields: [userId], references: [id])
+  items     CartItem[]
 }
 
 model CartItem {
-  id        Int @id @default(autoincrement())
-  cartId   Int
+  id        Int      @id @default(autoincrement())
+  cartId    Int
   productId Int
-  quantity Int
-  priceAtTime Decimal @db.Decimal(10,2)
+  quantity  Int      @default(1)
 
   cart    Cart    @relation(fields: [cartId], references: [id])
   product Product @relation(fields: [productId], references: [id])
@@ -108,47 +129,52 @@ model CartItem {
 }
 
 model Order {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  total     Decimal  @db.Decimal(12,2)
-  status    OrderStatus @default(PENDING)
-  createdAt DateTime @default(now())
+  id              Int         @id @default(autoincrement())
+  userId          Int
+  total           Decimal     @db.Decimal(12, 2)
+  status          OrderStatus @default(PENDING)
+  shippingAddress String?     // Snapshot of address string
+  note            String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
-  user      User @relation(fields: [userId], references: [id])
-  items     OrderItem[]
-  payment   Payment?
+  user    User        @relation(fields: [userId], references: [id])
+  items   OrderItem[]
+  payment Payment?
 }
 
 model OrderItem {
-  id        Int @id @default(autoincrement())
+  id        Int     @id @default(autoincrement())
   orderId   Int
   productId Int
   quantity  Int
-  price     Decimal @db.Decimal(10,2)
+  price     Decimal @db.Decimal(10, 2) // Snapshot of price at purchase
 
-  order     Order   @relation(fields: [orderId], references: [id])
-  product   Product @relation(fields: [productId], references: [id])
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
 }
 
 model Address {
-  id        Int @id @default(autoincrement())
+  id        Int     @id @default(autoincrement())
   userId    Int
   receiver  String
   phone     String
   detail    String
   city      String
+  isDefault Boolean @default(false)
 
   user User @relation(fields: [userId], references: [id])
 }
 
 model Payment {
-  id        Int @id @default(autoincrement())
-  orderId   Int @unique
-  method    PaymentMethod
-  amount    Decimal @db.Decimal(12,2)
-  status    PaymentStatus @default(PENDING)
+  id              Int           @id @default(autoincrement())
+  orderId         Int           @unique
+  method          PaymentMethod
+  amount          Decimal       @db.Decimal(12, 2)
+  status          PaymentStatus @default(PENDING)
   transactionCode String?
-  paidAt    DateTime?
+  paidAt          DateTime?
+  createdAt       DateTime      @default(now())
 
   order Order @relation(fields: [orderId], references: [id])
 }

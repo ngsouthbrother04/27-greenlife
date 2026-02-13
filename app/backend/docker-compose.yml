@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    ports:
+      - "5001:5000"
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: "postgresql://user:password@postgres:5432/greenlife_db?schema=public"
+      JWT_SECRET: "supersecretkey123"
+      PORT: 5000
+    # Wait for postgres to be ready, then migrate, seed, and start
+    command: >
+      sh -c "npx prisma migrate dev --name init && npm run seed && npm run dev"
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: greenlife_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
