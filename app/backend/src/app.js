@@ -1,7 +1,12 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import routes from './routes/index.js';
+import compression from 'compression';
+import ApiError from './utils/ApiError.js';
+import { StatusCodes } from 'http-status-codes';
+import { errorHandlingMiddleware } from './middlewares/errorHandling.middleware.js';
 
 const app = express();
 
@@ -9,21 +14,24 @@ const app = express();
 app.use(cors());
 app.use(helmet());
 app.use(morgan('dev'));
+app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// API Routes
+app.use('/api', routes);
 
 // Basic route for testing
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to GreenLife Store API' });
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    status: 'error',
-    message: 'Internal Server Error',
-  });
+// Handle 404 Not Found
+app.use((req, res, next) => {
+  next(new ApiError(StatusCodes.NOT_FOUND, 'Not Found'));
 });
 
-module.exports = app;
+// Global Error Handling Middleware
+app.use(errorHandlingMiddleware);
+
+export default app;

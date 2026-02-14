@@ -7,8 +7,6 @@ import { StatusCodes } from 'http-status-codes';
 const prisma = new PrismaClient();
 
 const SALT_ROUNDS = 10;
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-it';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1d';
 
 /**
  * Register a new user
@@ -64,10 +62,12 @@ export const login = async (email, password) => {
   }
 
   // Generate Token
+  const secret = process.env.JWT_SECRET || 'your-secret-key-change-it';
+
   const accessToken = jwt.sign(
     { sub: user.id, role: user.role },
-    JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN }
+    secret,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '1d' }
   );
 
   // eslint-disable-next-line no-unused-vars
@@ -104,6 +104,6 @@ export const seedAdmin = async () => {
       console.log('✅ Seeded default Admin account');
     }
   } catch (error) {
-    console.error('❌ Failed to seed admin:', error);
+    throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to seed admin');
   }
 };

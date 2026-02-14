@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import { StatusCodes } from 'http-status-codes';
 import ApiError from '../utils/ApiError.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-it';
+// JWT_SECRET moved to inside function to ensure runtime loading
 
 /**
  * Middleware to verify JWT Access Token
@@ -17,7 +17,8 @@ export const verifyToken = (req, res, next) => {
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const secret = process.env.JWT_SECRET || 'your-secret-key-change-it';
+    const decoded = jwt.verify(token, secret);
     req.user = decoded; // { sub: userId, role: 'ADMIN'/'CUSTOMER' }
     next();
   } catch (error) { // eslint-disable-line no-unused-vars

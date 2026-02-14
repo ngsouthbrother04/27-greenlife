@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "AI Agent project powered by Google Antigravity",
   "private": true,
+  "type": "module",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
@@ -20,19 +21,25 @@
   "license": "MIT",
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "axios": "^1.13.5",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
+    "cloudinary": "^1.41.0",
+    "compression": "^1.8.1",
     "cors": "^2.8.6",
-    "dotenv": "^16.6.1",
     "express": "^4.22.1",
     "helmet": "^7.0.0",
     "http-status-codes": "^2.3.0",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1",
+    "multer": "^1.4.5-lts.1",
+    "multer-storage-cloudinary": "^4.0.0",
     "pg": "^8.11.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "dotenv": "^17.3.1",
+    "ngrok": "^5.0.0-beta.2",
     "nodemon": "^3.1.11",
     "prisma": "^5.22.0"
   },
