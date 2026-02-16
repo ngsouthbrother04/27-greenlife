@@ -14,7 +14,7 @@ const AdminDashboard = () => {
     { name: 'Tổng sản phẩm', value: '24', icon: Package, color: 'bg-blue-500' },
     { name: 'Đơn hàng hôm nay', value: '12', icon: ShoppingCart, color: 'bg-green-500' },
     { name: 'Khách hàng', value: '156', icon: Users, color: 'bg-purple-500' },
-    { name: 'Doanh thu tháng', value: '15.2M', icon: TrendingUp, color: 'bg-orange-500' },
+    { name: 'Doanh thu tháng', value: '15.2M ₫', icon: TrendingUp, color: 'bg-orange-500' },
   ];
 
   return (

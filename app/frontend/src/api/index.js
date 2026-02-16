@@ -8,7 +8,26 @@
  * import { productService, orderService, paymentService } from '@/api';
  */
 
-export { default as axiosClient } from './axiosClient';
-export { default as productService } from './productService';
-export { default as orderService } from './orderService';
-export { default as paymentService } from './paymentService';
+import axiosClient from './axiosClient';
+import productService from './productService';
+import orderService from './orderService';
+import paymentService from './paymentService';
+import categoryService from './categoryService';
+import authService from './authService';
+import uploadService from './uploadService';
+import cartService from './cartService';
+import userService from './userService';
+import wishlistService from './wishlistService';
+
+export {
+  axiosClient,
+  productService,
+  orderService,
+  paymentService,
+  categoryService,
+  authService,
+  uploadService,
+  cartService,
+  userService,
+  wishlistService
+};

@@ -21,5 +21,7 @@ router.post('/me/addresses/:id/set-default', userController.setDefaultAddress);
 
 // 2. Admin Routes
 router.get('/', authorize(['ADMIN']), userController.getAll);
+router.put('/:id', authorize(['ADMIN']), userController.updateUser);
+router.delete('/:id', authorize(['ADMIN']), userController.deleteUser);
 
 export default router;

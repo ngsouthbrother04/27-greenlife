@@ -42,8 +42,10 @@ const LoginPage = () => {
     onSuccess: (response) => {
       // Assuming response.data contains { user, token } or similar structure
       // Adjust based on actual API response
-      const { user, token } = response.data; // or response.data.data
-      setUser(user, token);
+      console.log('Login Response:', response);
+      const { user, accessToken } = response.data;
+      console.log('User:', user, 'Token:', accessToken);
+      setUser(user, accessToken);
       
       // Redirect to where they came from, or home
       const from = location.state?.from?.pathname || '/';

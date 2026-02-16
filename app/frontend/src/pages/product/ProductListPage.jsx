@@ -19,8 +19,8 @@ const fallbackProducts = [
   {
     id: 1,
     name: 'Sparkling Mint Wonder of Peppermint Natural Mouthwash',
-    price: 100,
-    originalPrice: 120,
+    price: 100000,
+    originalPrice: 120000,
     rating: 4.5,
     image: mouthwashImg,
     category: 'Mouthwash',
@@ -30,8 +30,8 @@ const fallbackProducts = [
   {
     id: 2,
     name: 'Natural Teeth Whitening Toothpaste - Tea tree & Charcoal',
-    price: 100,
-    originalPrice: 150,
+    price: 100000,
+    originalPrice: 150000,
     rating: 4.8,
     image: toothpasteImg,
     category: 'Toothpaste',
@@ -41,8 +41,8 @@ const fallbackProducts = [
   {
     id: 3,
     name: 'Organic Bamboo Toothbrush with Soft Natural Bristles',
-    price: 100,
-    originalPrice: 130,
+    price: 100000,
+    originalPrice: 130000,
     rating: 4.6,
     image: toothbrushImg,
     category: 'Toothbrush',
@@ -52,8 +52,8 @@ const fallbackProducts = [
   {
     id: 4,
     name: 'Sensitivity Relief Vanilla & Peppermint Natural Mouthwash',
-    price: 100,
-    originalPrice: 140,
+    price: 100000,
+    originalPrice: 140000,
     rating: 4.7,
     image: mouthwashImg,
     category: 'Mouthwash',
@@ -63,8 +63,8 @@ const fallbackProducts = [
   {
     id: 5,
     name: 'Charcoal Whitening Toothpaste - Fresh Mint',
-    price: 85,
-    originalPrice: 100,
+    price: 85000,
+    originalPrice: 100000,
     rating: 4.3,
     image: toothpasteImg,
     category: 'Toothpaste',
@@ -74,8 +74,8 @@ const fallbackProducts = [
   {
     id: 6,
     name: 'Eco Bamboo Dental Floss - Biodegradable',
-    price: 45,
-    originalPrice: 55,
+    price: 45000,
+    originalPrice: 55000,
     rating: 4.9,
     image: toothbrushImg,
     category: 'Dental Floss',
@@ -104,6 +104,7 @@ const ProductListPage = () => {
     maxPrice: searchParams.get('maxPrice') || undefined,
     inStock: searchParams.get('inStock') || undefined,
     sort: searchParams.get('sort') || undefined,
+    page: searchParams.get('page') || 1,
   };
 
   // Fetch products from API using React Query
@@ -123,18 +124,21 @@ const ProductListPage = () => {
    * Handle Add to Cart from product card
    * B2C Flow: Quick add -> Cart state updates -> Header badge updates
    */
-  const handleAddToCart = (productId) => {
+  const handleAddToCart = async (productId) => {
     const product = products.find(p => p.id === productId);
     if (product) {
       if (product.stock <= 0) {
         toast.error("Sản phẩm này đã hết hàng.");
         return;
       }
-      const result = addItem({
+      
+      const image = product.image || (product.images && product.images.length > 0 ? product.images[0] : '') || '';
+
+      const result = await addItem({
         id: product.id,
         name: product.name,
         price: product.price,
-        image: product.image,
+        image: image,
         stock: product.stock,
       });
       
@@ -237,20 +241,26 @@ const ProductListPage = () => {
                   <ProductCard 
                     key={product.id}
                     {...product}
+                    image={product.images?.[0] || product.image || ''}
                     onAddToCart={handleAddToCart}
                   />
                 ))}
               </div>
             )}
 
-            {/* Pagination (Mock UI) */}
-            {!isLoading && products.length > 0 && (
+            {/* Pagination */}
+            {!isLoading && products.length > 0 && apiData?.pagination?.totalPages > 1 && (
               <div className="flex justify-center gap-2 mt-12">
-                {[1, 2, 3].map((page) => (
+                {Array.from({ length: apiData.pagination.totalPages }, (_, i) => i + 1).map((page) => (
                   <button
                     key={page}
+                    onClick={() => {
+                        const newParams = new URLSearchParams(searchParams);
+                        newParams.set('page', page);
+                        setSearchParams(newParams);
+                    }}
                     className={`w-10 h-10 rounded-lg font-medium transition-colors ${
-                      page === 1 
+                      (parseInt(searchParams.get('page')) || 1) === page 
                         ? 'bg-de-primary text-white' 
                         : 'bg-white border border-divider text-secondary-custom hover:border-de-primary'
                     }`}

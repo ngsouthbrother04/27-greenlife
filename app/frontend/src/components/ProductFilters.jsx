@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import productService from '@/api/productService';
+import categoryService from '@/api/categoryService';
 import { X, Check } from 'lucide-react';
 
 /**
@@ -20,8 +20,12 @@ const ProductFilters = ({ className = '' }) => {
   useEffect(() => {
     // Fetch categories for the filter list
     const fetchCats = async () => {
-      const data = await productService.getCategories();
-      setCategories(data);
+      try {
+        const data = await categoryService.getCategories();
+        setCategories(data);
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+      }
     };
     fetchCats();
   }, []);
@@ -66,10 +70,10 @@ const ProductFilters = ({ className = '' }) => {
           className="w-full p-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-de-primary"
         >
           <option value="">Default</option>
-          <option value="price-asc">Price: Low to High</option>
-          <option value="price-desc">Price: High to Low</option>
-          <option value="name">Name (A-Z)</option>
-          <option value="newest">Newest Arrivals</option>
+          <option value="price_asc">Price: Low to High</option>
+          <option value="price_desc">Price: High to Low</option>
+          <option value="name_asc">Name (A-Z)</option>
+          <option value="createdAt_desc">Newest Arrivals</option>
         </select>
       </div>
 
@@ -92,16 +96,16 @@ const ProductFilters = ({ className = '' }) => {
             </span>
           </label>
           {categories.map((cat) => (
-            <label key={cat} className="flex items-center gap-2 cursor-pointer group">
+            <label key={cat.id} className="flex items-center gap-2 cursor-pointer group">
               <input 
                 type="radio" 
                 name="category"
-                checked={currentCategory.toLowerCase() === cat.toLowerCase()} 
-                onChange={() => updateParam('category', cat)}
+                checked={currentCategory === String(cat.id)} 
+                onChange={() => updateParam('category', cat.id)}
                 className="accent-de-primary"
               />
-              <span className={`text-sm ${currentCategory.toLowerCase() === cat.toLowerCase() ? 'text-de-primary font-medium' : 'text-gray-600 group-hover:text-de-primary'}`}>
-                {cat}
+              <span className={`text-sm ${currentCategory === String(cat.id) ? 'text-de-primary font-medium' : 'text-gray-600 group-hover:text-de-primary'}`}>
+                {cat.name}
               </span>
             </label>
           ))}

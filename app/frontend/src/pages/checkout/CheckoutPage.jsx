@@ -246,7 +246,7 @@ const Checkout = () => {
                       <p className="font-medium text-gray-900 truncate">{item.name}</p>
                       <div className="flex justify-between items-center mt-1">
                         <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
-                        <p className="font-medium text-de-primary">${(item.price * item.quantity).toFixed(2)}</p>
+                        <p className="font-medium text-de-primary">{(item.price * item.quantity).toLocaleString('vi-VN')}₫</p>
                       </div>
                     </div>
                   </div>
@@ -256,7 +256,7 @@ const Checkout = () => {
               <div className="space-y-3 pt-6 border-t border-divider">
                 <div className="flex justify-between text-gray-600">
                   <span>Subtotal</span>
-                  <span>${getTotalPrice().toFixed(2)}</span>
+                  <span>{getTotalPrice().toLocaleString('vi-VN')}₫</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>Shipping</span>
@@ -264,7 +264,7 @@ const Checkout = () => {
                 </div>
                 <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-dashed border-gray-200">
                   <span>Total</span>
-                  <span className="text-de-primary">${getTotalPrice().toFixed(2)}</span>
+                  <span className="text-de-primary">{getTotalPrice().toLocaleString('vi-VN')}₫</span>
                 </div>
               </div>
 

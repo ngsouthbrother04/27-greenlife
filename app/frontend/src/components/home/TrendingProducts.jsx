@@ -1,107 +1,37 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { useQuery } from '@tanstack/react-query';
 import { useCartStore } from '@/stores';
+import { productService } from '@/api';
 import ProductCard from '../products/ProductCard';
+import { Loader2 } from 'lucide-react';
 
 // Import icons
 import arrowLeft from '@/assets/images/arrow_left.svg';
 import arrowRight from '@/assets/images/arrow_right.svg';
 
-// Import product images
-import mouthwashImg from '@/assets/images/mouthwash_product_1770003186824.png';
-import toothpasteImg from '@/assets/images/natural_toothpaste_1770003224265.png';
-import toothbrushImg from '@/assets/images/bamboo_toothbrush_1770003204380.png';
-
-const products = [
-  {
-    id: 1,
-    name: 'Sparkling Mint Wonder of Peppermint Natural Mouthwash',
-    price: 100,
-    originalPrice: 120,
-    rating: 4.5,
-    image: mouthwashImg,
-    stock: 50,
-  },
-  {
-    id: 2,
-    name: 'Natural Teeth Whitening Toothpaste - Tea tree & Charcoal',
-    price: 100,
-    originalPrice: 150,
-    rating: 4.8,
-    image: toothpasteImg,
-    stock: 20,
-  },
-  {
-    id: 3,
-    name: 'Organic Bamboo Toothbrush with Soft Natural Bristles',
-    price: 100,
-    originalPrice: 130,
-    rating: 4.6,
-    image: toothbrushImg,
-    stock: 100,
-  },
-  {
-    id: 4,
-    name: 'Sensitivity Relief Vanilla & Peppermint Natural Mouthwash',
-    price: 100,
-    originalPrice: 140,
-    rating: 4.7,
-    image: mouthwashImg,
-    stock: 0,
-  },
-  {
-    id: 5,
-    name: 'Sparkling Mint Wonder of Peppermint Natural Mouthwash',
-    price: 100,
-    originalPrice: 120,
-    rating: 4.5,
-    image: mouthwashImg,
-    stock: 50,
-  },
-  {
-    id: 6,
-    name: 'Natural Teeth Whitening Toothpaste - Tea tree & Charcoal',
-    price: 100,
-    originalPrice: 150,
-    rating: 4.8,
-    image: toothpasteImg,
-    stock: 25,
-  },
-  {
-    id: 7,
-    name: 'Organic Bamboo Toothbrush with Soft Natural Bristles',
-    price: 100,
-    originalPrice: 130,
-    rating: 4.6,
-    image: toothbrushImg,
-    stock: 40,
-  },
-  {
-    id: 8,
-    name: 'Sensitivity Relief Vanilla & Peppermint Natural Mouthwash',
-    price: 100,
-    originalPrice: 140,
-    rating: 4.7,
-    image: mouthwashImg,
-    stock: 10,
-  },
-];
-
 const TrendingProducts = () => {
   const [startIndex, setStartIndex] = useState(0);
   const visibleProducts = 4;
 
+  // Fetch trending products
+  const { data: products = [], isLoading } = useQuery({
+    queryKey: ['products', 'trending'],
+    queryFn: () => productService.getTrendingProducts(6),
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+
   const handlePrev = () => {
-    setStartIndex(prev => Math.max(0, prev - 1));
+    setStartIndex(prev => (prev - 1 + products.length) % products.length);
   };
 
   const handleNext = () => {
-    setStartIndex(prev => Math.min(products.length - visibleProducts, prev + 1));
+    setStartIndex(prev => (prev + 1) % products.length);
   };
 
   const addItem = useCartStore((state) => state.addItem);
 
-  const handleAddToCart = (productId) => {
+  const handleAddToCart = async (productId) => {
     const product = products.find(p => p.id === productId);
     if (!product) return;
     
@@ -110,11 +40,12 @@ const TrendingProducts = () => {
       return;
     }
 
-    const result = addItem({
+    const result = await addItem({
       id: product.id,
       name: product.name,
       price: product.price,
-      image: product.image,
+      // Handle image array from backend or fallback
+      image: product.image || (product.images && product.images[0]) || '',
       stock: product.stock,
     });
 
@@ -124,6 +55,31 @@ const TrendingProducts = () => {
       toast.error(result.message || 'Không thể thêm vào giỏ hàng');
     }
   };
+
+  if (isLoading) {
+    return (
+      <section className="py-[80px] bg-white flex justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-de-primary" />
+      </section>
+    );
+  }
+
+  // If no products, hide section or show fallback? hiding for now logic wise, or empty
+  if (products.length === 0) return null; 
+
+  // Calculate visible items for infinite loop
+  const getVisibleProducts = () => {
+    if (products.length <= visibleProducts) return products;
+    
+    const visibleItems = [];
+    for (let i = 0; i < visibleProducts; i++) {
+        const index = (startIndex + i) % products.length;
+        visibleItems.push(products[index]);
+    }
+    return visibleItems;
+  };
+
+  const currentVisibleProducts = getVisibleProducts();
 
   return (
     <section className="py-[80px] relative bg-white">
@@ -141,28 +97,38 @@ const TrendingProducts = () => {
         {/* Products Carousel */}
         <div className="relative">
            {/* Navigation Buttons */}
-           <button 
-             onClick={handlePrev}
-             disabled={startIndex === 0}
-             className="absolute top-1/2 -left-4 xl:-left-16 -translate-y-1/2 z-10 flex items-center justify-center w-[32px] h-[32px] rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110"
-           >
-             <img src={arrowLeft} alt="Previous" className="w-full h-full" />
-           </button>
-           
-           <button 
-             onClick={handleNext}
-             disabled={startIndex >= products.length - visibleProducts}
-             className="absolute top-1/2 -right-4 xl:-right-16 -translate-y-1/2 z-10 flex items-center justify-center w-[32px] h-[32px] rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110"
-           >
-             <img src={arrowRight} alt="Next" className="w-full h-full" />
-           </button>
+           {products.length > visibleProducts && (
+             <>
+               <button 
+                 onClick={handlePrev}
+                 className="absolute top-1/2 -left-4 xl:-left-16 -translate-y-1/2 z-10 flex items-center justify-center w-[32px] h-[32px] rounded-full transition-all hover:scale-110"
+               >
+                 <img src={arrowLeft} alt="Previous" className="w-full h-full" />
+               </button>
+               
+               <button 
+                 onClick={handleNext}
+                 className="absolute top-1/2 -right-4 xl:-right-16 -translate-y-1/2 z-10 flex items-center justify-center w-[32px] h-[32px] rounded-full transition-all hover:scale-110"
+               >
+                 <img src={arrowRight} alt="Next" className="w-full h-full" />
+               </button>
+             </>
+           )}
 
           {/* Products Grid */}
           <div className="flex gap-6 overflow-hidden">
-            {products.slice(startIndex, startIndex + visibleProducts).map((product) => (
-              <div key={product.id} className="min-w-[280px] w-full flex-1">
+            {currentVisibleProducts.map((product, index) => (
+              // Add index to key to ensure uniqueness when wrapping (though product.id is usually unique, logic requires unique key for React list)
+              // Actually, using product.id is fine unless we show duplicates *simultaneously* which we don't for N < Length.
+              // But if Length < Visible, we just show all.
+              // If Length > Visible, we show slice.
+              // Wait, if Products = [A, B, C, D, E, F], Visible = 4.
+              // Start = 4 (E). Indices: 4(E), 5(F), 0(A), 1(B).
+              // Ensure keys are unique if A appears twice? No, slice is distinct sets here unless items duplicated in data.
+              <div key={`${product.id}-${index}`} className="min-w-[280px] w-full flex-1">
                  <ProductCard 
                     {...product}
+                    image={product.image || (product.images && product.images[0]) || ''}
                     onAddToCart={handleAddToCart}
                  />
               </div>

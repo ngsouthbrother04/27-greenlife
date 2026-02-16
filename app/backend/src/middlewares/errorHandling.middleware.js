@@ -7,6 +7,15 @@ import { StatusCodes } from 'http-status-codes';
 export const errorHandlingMiddleware = (err, req, res, next) => {
   if (!err.statusCode) err.statusCode = StatusCodes.INTERNAL_SERVER_ERROR;
 
+  // Handle Prisma Unique Constraint Violation
+  if (err.code === 'P2002') {
+    err.statusCode = StatusCodes.CONFLICT;
+    err.message = 'Email already exists'; // Simplify for now as Email is usually the unique field
+  }
+
+  // Log error for debugging
+  console.error('API Error:', err);
+
   const responseError = {
     statusCode: err.statusCode,
     message: err.message || StatusCodes[err.statusCode],

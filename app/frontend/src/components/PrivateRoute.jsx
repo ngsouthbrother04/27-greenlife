@@ -34,7 +34,7 @@ const PrivateRoute = ({ allowedRoles }) => {
   }
 
   // Check role permission if allowedRoles is specified
-  if (allowedRoles && (!user?.role || !allowedRoles.includes(user.role))) {
+  if (allowedRoles && (!user?.role || !allowedRoles.includes(user.role.toLowerCase()))) {
     // User logged in but doesn't have permission (e.g. user trying to access admin)
     return <Navigate to="/" replace />;
   }

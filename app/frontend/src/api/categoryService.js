@@ -10,73 +10,40 @@ const categoryService = {
    * Get all categories
    */
   getCategories: async () => {
-    try {
-      const response = await axiosClient.get('/categories');
-      return response.data;
-    } catch (error) {
-      console.warn('API Error/Offline, using in-memory mock data for categories');
-      return [
-        { id: 'toothpaste', name: 'Toothpaste', slug: 'toothpaste' },
-        { id: 'toothbrush', name: 'Toothbrush', slug: 'toothbrush' },
-        { id: 'mouthwash', name: 'Mouthwash', slug: 'mouthwash' },
-        { id: 'teeth-whitening', name: 'Teeth Whitening', slug: 'teeth-whitening' },
-        { id: 'dental-floss', name: 'Dental Floss', slug: 'dental-floss' },
-        { id: 'kits', name: 'Kits', slug: 'kits' }
-      ];
-    }
+    const response = await axiosClient.get('/categories');
+    return response.data.data; // Backend returns { status: 'success', data: [...] }
   },
 
   /**
    * Get category by slug
    */
   getCategoryBySlug: async (slug) => {
-    try {
-      const response = await axiosClient.get(`/categories/${slug}`, { timeout: 2000 });
-      return response.data;
-    } catch (error) {
-      // Mock response
-      return { id: slug, name: slug.charAt(0).toUpperCase() + slug.slice(1).replace('-', ' '), slug };
-    }
-  }
-  ,
+    const response = await axiosClient.get(`/categories/${slug}`);
+    return response.data;
+  },
 
   /**
    * Create new category (Admin)
    */
   createCategory: async (data) => {
-    try {
-      const response = await axiosClient.post('/categories', data, { timeout: 2000 });
-      return response.data;
-    } catch (error) {
-      // Mock success
-      return { id: Date.now(), ...data };
-    }
+    const response = await axiosClient.post('/categories', data);
+    return response.data;
   },
 
   /**
    * Update category (Admin)
    */
   updateCategory: async (id, data) => {
-    try {
-      const response = await axiosClient.put(`/categories/${id}`, data, { timeout: 2000 });
-      return response.data;
-    } catch (error) {
-      // Mock success
-      return { id, ...data };
-    }
+    const response = await axiosClient.put(`/categories/${id}`, data);
+    return response.data;
   },
 
   /**
    * Delete category (Admin)
    */
   deleteCategory: async (id) => {
-    try {
-      const response = await axiosClient.delete(`/categories/${id}`, { timeout: 2000 });
-      return response.data;
-    } catch (error) {
-      // Mock success
-      return { success: true };
-    }
+    const response = await axiosClient.delete(`/categories/${id}`);
+    return response.data;
   }
 };
 

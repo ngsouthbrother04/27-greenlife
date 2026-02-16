@@ -5,33 +5,56 @@ import { StatusCodes } from 'http-status-codes';
 const prisma = new PrismaClient();
 
 /**
- * Create order from cart
+ * Create order from cart OR directly from items (Frontend Cart)
  */
-export const createOrder = async (userId, shippingAddress, note) => {
-  // 1. Get cart with items
-  const cart = await prisma.cart.findUnique({
-    where: { userId },
-    include: {
-      items: {
-        include: { product: true }
+export const createOrder = async (userId, shippingAddress, note, items = null, totalAmount = null) => {
+  let orderItems = [];
+  let finalTotal = 0;
+
+  if (items && items.length > 0) {
+    // Case 1: Create from passed items (Frontend Cart)
+    orderItems = items;
+    // Recalculate total for security (trust backend price, but for now assume items have price)
+    // Ideally we should fetch latest price from DB for each item
+    for (const item of items) {
+      const product = await prisma.product.findUnique({ where: { id: item.productId } });
+      if (!product) throw new ApiError(StatusCodes.BAD_REQUEST, `Product ${item.productId} not found`);
+      if (product.stock < item.quantity) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, `Product ${product.name} is out of stock`);
       }
+      finalTotal += Number(product.price) * item.quantity;
+      // Attach DB price to item to ensure accuracy
+      item.price = product.price;
     }
-  });
+  } else {
+    // Case 2: Create from Backend Cart
+    const cart = await prisma.cart.findUnique({
+      where: { userId },
+      include: {
+        items: {
+          include: { product: true }
+        }
+      }
+    });
 
-  if (!cart || cart.items.length === 0) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Cart is empty');
-  }
-
-  // 2. Validate stock and calculate total
-  let total = 0;
-  for (const item of cart.items) {
-    if (item.product.stock < item.quantity) {
-      throw new ApiError(
-        StatusCodes.BAD_REQUEST,
-        `Product ${item.product.name} is out of stock or not enough quantity`
-      );
+    if (!cart || cart.items.length === 0) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'Cart is empty');
     }
-    total += Number(item.product.price) * item.quantity;
+
+    for (const item of cart.items) {
+      if (item.product.stock < item.quantity) {
+        throw new ApiError(
+          StatusCodes.BAD_REQUEST,
+          `Product ${item.product.name} is out of stock or not enough quantity`
+        );
+      }
+      finalTotal += Number(item.product.price) * item.quantity;
+      orderItems.push({
+        productId: item.productId,
+        quantity: item.quantity,
+        price: item.product.price
+      });
+    }
   }
 
   // 3. Create Order and OrderItems in transaction
@@ -40,29 +63,30 @@ export const createOrder = async (userId, shippingAddress, note) => {
     const newOrder = await tx.order.create({
       data: {
         userId,
-        total,
+        total: finalTotal,
         status: 'PENDING',
-        shippingAddress: shippingAddress || 'Default Address', // Should be proper address object string
+        shippingAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : (shippingAddress || 'Default Address'),
         note
       }
     });
 
     // Create OrderItems
-    for (const item of cart.items) {
+    for (const item of orderItems) {
       await tx.orderItem.create({
         data: {
           orderId: newOrder.id,
           productId: item.productId,
           quantity: item.quantity,
-          price: item.product.price
+          price: item.price
         }
       });
     }
 
-    // Clear Cart
-    await tx.cartItem.deleteMany({
-      where: { cartId: cart.id }
-    });
+    // Clear Backend Cart if it exists
+    const cart = await tx.cart.findUnique({ where: { userId } });
+    if (cart) {
+      await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+    }
 
     return newOrder;
   });

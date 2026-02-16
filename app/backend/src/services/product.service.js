@@ -36,7 +36,22 @@ export const getAllProducts = async (query) => {
   }
 
   if (categoryId) {
-    where.categoryId = Number(categoryId);
+    const catId = Number(categoryId);
+    if (!isNaN(catId)) {
+      where.categoryId = catId;
+    } else {
+      // It's likely a slug
+      const category = await prisma.category.findUnique({
+        where: { slug: categoryId }
+      });
+      if (category) {
+        where.categoryId = category.id;
+      } else {
+        // Category not found by slug, maybe return distinct result or ignore?
+        // Let's return empty result by setting impossible ID
+        where.categoryId = -1;
+      }
+    }
   }
 
   if (minPrice || maxPrice) {
@@ -59,8 +74,8 @@ export const getAllProducts = async (query) => {
       case 'name_asc':
         orderBy = { name: 'asc' };
         break;
-      case 'name_desc':
-        orderBy = { name: 'desc' };
+      case 'createdAt_desc':
+        orderBy = { createdAt: 'desc' };
         break;
       // 'sold' sorting requires 'sold' field or order aggregation, which is complex.
       // For now, let's assume 'createdAt' desc is fallback.
@@ -94,6 +109,69 @@ export const getAllProducts = async (query) => {
 };
 
 /**
+ * Get top selling products
+ * @param {number} limit - Number of products
+ * @returns {Promise<Array>} List of products
+ */
+export const getTopSellingProducts = async (limit = 6) => {
+  // 1. Group by productId and sum quantity in OrderItem
+  const groupBy = await prisma.orderItem.groupBy({
+    by: ['productId'],
+    _sum: {
+      quantity: true
+    },
+    orderBy: {
+      _sum: {
+        quantity: 'desc'
+      }
+    },
+    take: limit
+  });
+
+  // 2. Extract product IDs
+  const productIds = groupBy.map(item => item.productId);
+
+  // 3. Fetch product details
+  // Note: findMany does not guarantee order match with 'in' array.
+  // We need to re-sort them in application layer or retrieve one by one (less efficient).
+  // Given small limit (6), mapping is fine.
+  const products = await prisma.product.findMany({
+    where: {
+      id: { in: productIds },
+      status: 'ACTIVE'
+    },
+    include: {
+      category: true
+    }
+  });
+
+  // 4. Sort products based on the sales order
+  const sortedProducts = productIds
+    .map(id => products.find(p => p.id === id))
+    .filter(p => p !== undefined); // Filter out any that might have been deleted/inactive
+
+  // If we don't have enough sales data, fill with newest products
+  if (sortedProducts.length < limit) {
+    const needed = limit - sortedProducts.length;
+    const existingIds = sortedProducts.map(p => p.id);
+
+    const fillProducts = await prisma.product.findMany({
+      where: {
+        id: { notIn: existingIds },
+        status: 'ACTIVE'
+      },
+      orderBy: { createdAt: 'desc' },
+      take: needed,
+      include: { category: true }
+    });
+
+    return [...sortedProducts, ...fillProducts];
+  }
+
+  return sortedProducts;
+};
+
+/**
  * Get product by ID
  * @param {number|string} id - Product ID
  * @returns {Promise<Object>} Product detail
@@ -119,10 +197,37 @@ export const getProductById = async (id) => {
   return product;
 };
 
+// Helper to generate slug
+const slugify = (text) => {
+  return text
+    .toString()
+    .toLowerCase()
+    .normalize('NFD') // Split accented characters
+    .replace(/[\u0300-\u036f]/g, '') // Remove accents
+    .replace(/\s+/g, '-') // Replace spaces with -
+    .replace(/[^\w\-]+/g, '') // Remove all non-word chars
+    .replace(/\-\-+/g, '-') // Replace multiple - with single -
+    .replace(/^-+/, '') // Trim - from start
+    .replace(/-+$/, ''); // Trim - from end
+};
+
 /**
  * Create Product (Admin)
  */
 export const createProduct = async (data) => {
+  if (!data.slug) {
+    data.slug = slugify(data.name);
+  }
+
+  // Ensure uniqueness
+  let slug = data.slug;
+  let counter = 1;
+  while (await prisma.product.findUnique({ where: { slug } })) {
+    slug = `${data.slug}-${counter}`;
+    counter++;
+  }
+  data.slug = slug;
+
   return await prisma.product.create({
     data
   });

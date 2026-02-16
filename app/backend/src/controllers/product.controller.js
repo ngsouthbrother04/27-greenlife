@@ -22,6 +22,24 @@ export const getProducts = async (req, res, next) => {
 };
 
 /**
+ * Get trending (top selling) products
+ */
+export const getTrendingProducts = async (req, res, next) => {
+  try {
+    const limit = req.query.limit || 6;
+    const products = await productService.getTopSellingProducts(Number(limit));
+
+    res.status(StatusCodes.OK).json({
+      status: 'success',
+      results: products.length,
+      data: { products }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Get product by ID (Public)
  */
 export const getProduct = async (req, res, next) => {

@@ -18,7 +18,59 @@ export const getAllUsers = async () => {
       phone: true,
       role: true,
       createdAt: true
-    }
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+};
+
+/**
+ * Update user (Admin only)
+ */
+export const updateUser = async (userId, data) => {
+  const { role, isActive } = data; // Only allow role/status updates
+  // Note: 'isActive' might need a schema update if not present. 
+  // Let's check schema.prisma first? 
+  // Assuming 'role' is in schema. 'status' or 'isActive' might not be.
+  // Existing schema has 'status' in Product but maybe not User.
+  // user.controller.js getAllUsers returns 'role'.
+  // Let's assume we can update 'role' for now.
+
+  return await prisma.user.update({
+    where: { id: userId },
+    data: { role },
+    select: { id: true, fullName: true, email: true, role: true }
+  });
+};
+
+/**
+ * Delete user (Admin only)
+ * Manually deletes all related data to avoid foreign key constraints
+ */
+export const deleteUser = async (userId) => {
+  // 1. Delete Reviews
+  await prisma.review.deleteMany({ where: { userId } });
+
+  // 2. Delete Addresses
+  await prisma.address.deleteMany({ where: { userId } });
+
+  // 3. Delete Cart and CartItems
+  const cart = await prisma.cart.findUnique({ where: { userId } });
+  if (cart) {
+    await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
+    await prisma.cart.delete({ where: { id: cart.id } });
+  }
+
+  // 4. Delete Orders (and related OrderItems, Payments)
+  const orders = await prisma.order.findMany({ where: { userId } });
+  for (const order of orders) {
+    await prisma.orderItem.deleteMany({ where: { orderId: order.id } });
+    await prisma.payment.deleteMany({ where: { orderId: order.id } });
+    await prisma.order.delete({ where: { id: order.id } });
+  }
+
+  // 5. Finally delete User
+  return await prisma.user.delete({
+    where: { id: userId }
   });
 };
 

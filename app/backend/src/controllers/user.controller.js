@@ -15,6 +15,31 @@ export const getAll = async (req, res, next) => {
   }
 };
 
+export const updateUser = async (req, res, next) => {
+  try {
+    const user = await userService.updateUser(Number(req.params.id), req.body);
+    res.status(StatusCodes.OK).json({
+      status: 'success',
+      message: 'User updated successfully',
+      data: { user }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteUser = async (req, res, next) => {
+  try {
+    await userService.deleteUser(Number(req.params.id));
+    res.status(StatusCodes.OK).json({
+      status: 'success',
+      message: 'User deleted successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getProfile = async (req, res, next) => {
   try {
     const userId = req.user.sub;

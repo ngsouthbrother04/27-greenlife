@@ -18,6 +18,9 @@ app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Static files
+app.use('/uploads', express.static('public/uploads'));
+
 // API Routes
 app.use('/api', routes);
 

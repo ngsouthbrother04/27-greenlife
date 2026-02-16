@@ -42,3 +42,29 @@ export const updateOrderStatus = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getOrder = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const order = await adminService.getOrder(id);
+    res.status(StatusCodes.OK).json({
+      status: 'success',
+      data: { order }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteOrder = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await adminService.deleteOrder(id);
+    res.status(StatusCodes.OK).json({
+      status: 'success',
+      message: 'Order deleted successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};

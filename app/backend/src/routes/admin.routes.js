@@ -13,6 +13,8 @@ router.get('/stats', adminController.getDashboardStats);
 
 // Order Management
 router.get('/orders', adminController.getAllOrders);
+router.get('/orders/:id', adminController.getOrder);
 router.put('/orders/:id/status', adminController.updateOrderStatus);
+router.delete('/orders/:id', adminController.deleteOrder);
 
 export default router;

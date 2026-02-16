@@ -7,77 +7,76 @@ import axiosClient from './axiosClient';
 const authService = {
   // Login user: { email, password }
   login: async (data) => {
-    // MOCK DATA FOR TESTING
-    if (data.email === 'admin@gmail.com' && data.password === '123456') {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            data: {
-              token: 'mock-admin-token',
-              user: {
-                id: '1',
-                name: 'Admin User',
-                email: 'admin@gmail.com',
-                role: 'admin'
-              }
-            }
-          });
-        }, 500);
-      });
-    }
-
-    if (data.email === 'user@gmail.com' && data.password === '123456') {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            data: {
-              token: 'mock-user-token',
-              user: {
-                id: '2',
-                name: 'Regular User',
-                email: 'user@gmail.com',
-                role: 'user'
-              }
-            }
-          });
-        }, 500);
-      });
-    }
-
-    return axiosClient.post('/auth/login', data);
+    const response = await axiosClient.post('/auth/login', data);
+    return response.data; // Expected: { status: 'success', data: { user, token } }
   },
 
-  // Register user: { name, email, password }
-  register: (data) => {
-    return axiosClient.post('/auth/register', data);
+  // Register user: { fullName, email, password, phone }
+  register: async (data) => {
+    const response = await axiosClient.post('/auth/register', data);
+    return response.data;
   },
 
   // Get current user profile
-  getProfile: () => {
-    return axiosClient.get('/auth/me');
+  getProfile: async () => {
+    const response = await axiosClient.get('/users/me'); // Backend endpoint for profile
+    return response.data; // Expected: { status: 'success', data: { user } }
   },
 
   // Update user profile
   updateProfile: async (data) => {
-    // MOCK: Simulate API delay
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          data: {
-            success: true,
-            user: data // In real app, backend returns updated user
-          }
-        });
-      }, 500);
-    });
-    // return axiosClient.put('/auth/me', data);
+    const response = await axiosClient.put('/users/me', data);
+    return response.data;
   },
 
-  // Logout (optional - if backend invalidates token)
-  logout: () => {
-    // For mock users, we just resolve immediately
-    return new Promise((resolve) => resolve());
-    // return axiosClient.post('/auth/logout');
+  // Change Password
+  changePassword: async (data) => {
+    const response = await axiosClient.put('/users/me/password', data);
+    return response.data;
+  },
+
+  // User Addresses
+  getAddresses: async () => {
+    const response = await axiosClient.get('/users/me/addresses');
+    return response.data;
+  },
+
+  addAddress: async (data) => {
+    const response = await axiosClient.post('/users/me/addresses', data);
+    return response.data;
+  },
+
+  updateAddress: async (id, data) => {
+    const response = await axiosClient.put(`/users/me/addresses/${id}`, data);
+    return response.data;
+  },
+
+  deleteAddress: async (id) => {
+    const response = await axiosClient.delete(`/users/me/addresses/${id}`);
+    return response.data;
+  },
+
+  setDefaultAddress: async (id) => {
+    const response = await axiosClient.post(`/users/me/addresses/${id}/default`);
+    return response.data;
+  },
+
+  // Admin: Get all users
+  getAllUsers: async (params = {}) => {
+    const response = await axiosClient.get('/users', { params });
+    return response.data; // { status: 'success', data: { users }, ... }
+  },
+
+  // Admin: Update user (role, etc.)
+  updateUser: async (id, data) => {
+    const response = await axiosClient.put(`/users/${id}`, data);
+    return response.data;
+  },
+
+  // Admin: Delete user
+  deleteUser: async (id) => {
+    const response = await axiosClient.delete(`/users/${id}`);
+    return response.data;
   }
 };
 

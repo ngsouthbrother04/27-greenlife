@@ -1,5 +1,5 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, Menu, X, Search, LogOut, Settings } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, Search, LogOut, Settings, Heart } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useCartStore, useAuthStore } from '@/stores';
 import SearchBar from './SearchBar';
@@ -110,13 +110,13 @@ const Header = () => {
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-6 z-20 bg-white pl-4">
+        <div className="flex items-center gap-4 z-20 bg-white pl-4">
            {/* Search Toggle */}
            <div className="hidden lg:block">
              {!searchOpen && (
                <button 
                 onClick={() => setSearchOpen(true)}
-                className="p-2 text-[#494961] opacity-70 hover:opacity-100 transition-opacity"
+                className="flex items-center justify-center w-10 h-10 rounded-full text-[#494961] opacity-70 hover:opacity-100 hover:bg-surface-light transition-all"
                >
                  <Search className="w-6 h-6" />
                </button>
@@ -127,9 +127,9 @@ const Header = () => {
           <div className="relative" ref={userMenuRef}>
             <button 
               onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className="hidden lg:flex items-center justify-center w-8 h-8 rounded-full hover:bg-surface-light transition-colors text-[#405741]"
+              className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-light transition-colors text-[#405741]"
             >
-               <User className="w-8 h-8" />
+               <User className="w-6 h-6" />
             </button>
             
             {/* User Dropdown */}
@@ -139,11 +139,11 @@ const Header = () => {
                   // Authenticated State
                   <>
                     <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="text-sm font-medium text-gray-900 truncate">{user?.name || 'User'}</p>
+                      <p className="text-sm font-medium text-gray-900 truncate">{user?.fullName || 'User'}</p>
                       <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                     </div>
                     
-                    {user?.role === 'admin' && (
+                    {(user?.role === 'admin' || user?.role === 'ADMIN') && (
                       <Link 
                         to="/admin" 
                         onClick={() => setUserMenuOpen(false)}
@@ -194,14 +194,22 @@ const Header = () => {
             )}
           </div>
 
+          {/* Wishlist */}
+          <Link 
+            to="/wishlist" 
+            className="flex items-center justify-center w-10 h-10 hover:bg-surface-light rounded-full transition-colors text-red-500"
+          >
+            <Heart className="w-6 h-6" />
+          </Link>
+
           {/* Cart */}
           <Link 
             to="/cart" 
-            className="relative flex items-center justify-center w-8 h-8 hover:bg-surface-light rounded-full transition-colors text-[#494961]"
+            className="relative flex items-center justify-center w-10 h-10 hover:bg-surface-light rounded-full transition-colors text-[#494961]"
           >
-            <ShoppingCart className="w-8 h-8" />
+            <ShoppingCart className="w-6 h-6" />
             {cartItemsCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-de-primary text-white text-xs rounded-full flex items-center justify-center font-bold">
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-de-primary text-white text-xs rounded-full flex items-center justify-center font-bold border-2 border-white box-content">
                 {cartItemsCount > 99 ? '99+' : cartItemsCount}
               </span>
             )}
@@ -263,7 +271,7 @@ const Header = () => {
                     <p className="font-medium text-gray-900">{user?.name}</p>
                     <p className="text-sm text-gray-500">{user?.email}</p>
                  </div>
-                 {user?.role === 'admin' && (
+                 {(user?.role === 'admin' || user?.role === 'ADMIN') && (
                     <Link 
                       to="/admin" 
                       onClick={() => setMobileMenuOpen(false)}

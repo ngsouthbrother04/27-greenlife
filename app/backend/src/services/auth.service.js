@@ -36,10 +36,23 @@ export const register = async (userData) => {
     }
   });
 
+  // Generate Token
+  const secret = process.env.JWT_SECRET || 'your-secret-key-change-it';
+
+  const accessToken = jwt.sign(
+    { sub: newUser.id, role: newUser.role },
+    secret,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '1d' }
+  );
+
   // Remove password from response
   // eslint-disable-next-line no-unused-vars
   const { password: _, ...userWithoutPassword } = newUser;
-  return userWithoutPassword;
+
+  return {
+    user: userWithoutPassword,
+    accessToken
+  };
 };
 
 /**

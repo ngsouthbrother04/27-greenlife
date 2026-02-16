@@ -77,9 +77,13 @@ const CartPage = () => {
                 {/* Product Image */}
                 <div className="w-24 h-24 bg-surface-light rounded-xl overflow-hidden flex-shrink-0">
                   <img 
-                    src={item.image}
+                    src={item.image || 'https://placehold.co/100x100?text=No+Image'}
                     alt={item.name}
                     className="w-full h-full object-contain p-2"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = 'https://placehold.co/100x100?text=No+Image';
+                    }}
                   />
                 </div>
 
@@ -89,7 +93,8 @@ const CartPage = () => {
                     {item.name}
                   </h3>
                   <p className="subtitle-semibold text-de-primary">
-                    ${item.price}
+                    {/* Ensure price is handled safely */}
+                    {(Number(item.price) || 0).toLocaleString('vi-VN')}₫
                   </p>
                 </div>
 
@@ -147,16 +152,16 @@ const CartPage = () => {
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between paragraph-1 text-secondary-custom">
                   <span>Tạm tính</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>{subtotal.toLocaleString('vi-VN')}₫</span>
                 </div>
                 <div className="flex justify-between paragraph-1 text-secondary-custom">
                   <span>Phí vận chuyển</span>
-                  <span>${shipping.toFixed(2)}</span>
+                  <span>{shipping.toLocaleString('vi-VN')}₫</span>
                 </div>
                 <div className="border-t border-divider pt-4">
                   <div className="flex justify-between subtitle-semibold text-primary-custom">
                     <span>Tổng cộng</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>{total.toLocaleString('vi-VN')}₫</span>
                   </div>
                 </div>
               </div>

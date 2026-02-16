@@ -6,6 +6,7 @@ export const getCart = async (req, res, next) => {
   try {
     const userId = req.user.sub;
     const cart = await cartService.getCart(userId);
+    console.log('DEBUG: Sending Cart Data:', JSON.stringify(cart, null, 2)); // Log entire cart
     res.status(StatusCodes.OK).json({
       status: 'success',
       data: { cart }
@@ -28,7 +29,7 @@ export const addToCart = async (req, res, next) => {
       });
     }
 
-    const cart = await cartService.addToCart(userId, productId, quantity);
+    const cart = await cartService.addToCart(userId, parseInt(productId), parseInt(quantity || 1));
     res.status(StatusCodes.OK).json({
       status: 'success',
       message: 'Item added to cart',
@@ -51,7 +52,13 @@ export const bulkAddToCart = async (req, res, next) => {
       });
     }
 
-    const cart = await cartService.bulkAddToCart(userId, items);
+    // Convert types for all items
+    const sanitizedItems = items.map(item => ({
+      productId: parseInt(item.productId),
+      quantity: parseInt(item.quantity)
+    }));
+
+    const cart = await cartService.bulkAddToCart(userId, sanitizedItems);
     res.status(StatusCodes.OK).json({
       status: 'success',
       message: 'Items added to cart',
@@ -74,7 +81,7 @@ export const updateCartItem = async (req, res, next) => {
       });
     }
 
-    const cart = await cartService.updateCartItem(userId, productId, quantity);
+    const cart = await cartService.updateCartItem(userId, parseInt(productId), parseInt(quantity));
     res.status(StatusCodes.OK).json({
       status: 'success',
       message: 'Cart updated',

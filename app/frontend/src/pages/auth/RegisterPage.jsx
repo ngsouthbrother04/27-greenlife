@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import { Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '@/stores';
 import authService from '@/api/authService';
@@ -34,6 +35,7 @@ const RegisterPage = () => {
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(registerSchema),
@@ -44,18 +46,41 @@ const RegisterPage = () => {
     mutationFn: authService.register,
     onSuccess: (response) => {
       // Auto login after register
-      const { user, token } = response.data;
-      setUser(user, token);
+      console.log('DEBUG: Register Response Data:', response);
+      // response = { status: 'success', message: '...', data: { user: {...}, accessToken: "..." } }
+      
+      const { user, accessToken } = response.data || {};
+      
+      if (!user || !accessToken) {
+        console.error('Missing user or accessToken in response data');
+        toast.error('Registration successful but login failed. Please login manually.');
+        navigate('/auth/login');
+        return;
+      }
+      
+      setUser(user, accessToken);
+      toast.success('Account created successfully!');
       navigate('/');
     },
     onError: (error) => {
       console.error('Registration failed:', error);
+      // specific error handling for duplicate email
+      if (error.response?.status === 409 || error.response?.data?.message?.includes('already exists')) {
+        setError('email', {
+          type: 'manual',
+          message: 'Email already exists'
+        });
+      }
     }
   });
 
   const onSubmit = (data) => {
-    // API usually expects { name, email, password }
-    const { confirmPassword, ...payload } = data;
+    // API usually expects { fullName, email, password }
+    const { confirmPassword, name, ...rest } = data;
+    const payload = {
+      ...rest,
+      fullName: name // map form 'name' to API 'fullName'
+    };
     registerMutation.mutate(payload);
   };
 

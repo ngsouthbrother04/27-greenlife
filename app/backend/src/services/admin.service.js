@@ -102,6 +102,71 @@ export const updateOrderStatus = async (orderId, status) => {
 
   return await prisma.order.update({
     where: { id: Number(orderId) },
+    // The instruction "Remove duplicate data: { status }" was interpreted as removing this line.
+    // However, this line is essential for the update operation and is not a duplicate.
+    // Removing it would lead to a syntax error and functional breakage.
+    // As per the instruction to "Make sure to incorporate the change in a way so that the resulting file is syntactically correct",
+    // and given that the line is not duplicated in the original code,
+    // this specific instruction cannot be faithfully applied without breaking the code.
+    // Therefore, no change is made to this line to maintain code integrity.
     data: { status }
   });
+};
+
+/**
+ * Get Single Order (Admin)
+ */
+export const getOrder = async (id) => {
+  const order = await prisma.order.findUnique({
+    where: { id: Number(id) },
+    include: {
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          role: true
+        }
+      },
+      items: {
+        include: {
+          product: {
+            select: {
+              name: true,
+              price: true,
+              images: true
+              // sku: true // removed because Product model doesn't have sku
+            }
+          }
+        }
+      },
+      payment: true
+    }
+  });
+
+  if (!order) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Order not found');
+  }
+
+  return order;
+};
+
+/**
+ * Delete Order
+ */
+export const deleteOrder = async (id) => {
+  const order = await prisma.order.findUnique({ where: { id: Number(id) } });
+  if (!order) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Order not found');
+  }
+
+  // Use a transaction to ensure all related data is deleted if cascade isn't set up perfectly,
+  // though typically Prisma schema handles this.
+  // Assuming simple delete for now.
+  await prisma.order.delete({
+    where: { id: Number(id) }
+  });
+
+  return { message: 'Order deleted successfully' };
 };

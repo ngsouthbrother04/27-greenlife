@@ -6,6 +6,7 @@ const router = express.Router();
 
 // Public Routes
 router.get('/', productController.getProducts);
+router.get('/trending', productController.getTrendingProducts); // Must be before /:id to avoid conflict
 router.get('/:id', productController.getProduct);
 
 // Review Routes

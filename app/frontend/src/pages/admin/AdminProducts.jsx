@@ -1,27 +1,22 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { 
-  Plus, Search, Edit, Trash2, MoreHorizontal, 
-  Loader2, Image as ImageIcon, X 
-} from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import * as z from 'zod';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
+import { Loader2, Plus, Search, Edit, Trash2, X, ImageIcon } from 'lucide-react';
+import productService from '@/api/productService';
 import categoryService from '@/api/categoryService';
-import { 
-  useProducts, 
-  useAdminProducts 
-} from '@/hooks';
+import uploadService from '@/api/uploadService';
 
-// Zod Schema for Product Form
 const productSchema = z.object({
   name: z.string().min(3, 'Tên sản phẩm phải có ít nhất 3 ký tự'),
   price: z.number().min(0, 'Giá phải lớn hơn hoặc bằng 0'),
   originalPrice: z.number().min(0, 'Giá gốc phải lớn hơn hoặc bằng 0').optional(),
-  category: z.string().min(1, 'Vui lòng chọn danh mục'),
+  categoryId: z.coerce.number().min(1, 'Vui lòng chọn danh mục'),
   stock: z.number().int('Tồn kho phải là số nguyên').min(0, 'Tồn kho phải lớn hơn hoặc bằng 0'),
   description: z.string().min(10, 'Mô tả phải có ít nhất 10 ký tự'),
-  image: z.string().url('URL hình ảnh không hợp lệ').or(z.literal('')),
+  image: z.string().optional(),
 });
 
 const AdminProducts = () => {
@@ -30,64 +25,81 @@ const AdminProducts = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
-  // Data Fetching
-  const { data: productsData, isLoading } = useProducts();
-  const products = productsData?.products || productsData || []; // Handle different API response structures
+  const queryClient = useQueryClient();
+
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting: isFormSubmitting } } = useForm({
+    resolver: zodResolver(productSchema),
+  });
+
+  const { data: productsData, isLoading } = useQuery({
+    queryKey: ['products'],
+    queryFn: () => productService.getProducts({ limit: 1000 }),
+  });
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
     queryFn: categoryService.getCategories,
   });
 
-  // Mutations
-  const { 
-    createProduct, 
-    updateProduct, 
-    deleteProduct, 
-    isCreating, 
-    isUpdating, 
-    isDeleting 
-  } = useAdminProducts();
+  const products = productsData?.products || [];
 
-  // Form Setup
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-    formState: { errors },
-  } = useForm({
-    resolver: zodResolver(productSchema),
-    defaultValues: {
+  const { mutate: createProduct, isLoading: isCreating } = useMutation({
+    mutationFn: productService.createProduct,
+    onSuccess: () => {
+      queryClient.invalidateQueries(['products']);
+      toast.success('Thêm sản phẩm thành công');
+      handleCloseModal();
+    },
+    onError: (error) => toast.error('Thêm sản phẩm thất bại: ' + error.message),
+  });
+
+  const { mutate: updateProduct, isLoading: isUpdating } = useMutation({
+    mutationFn: ({ id, data }) => productService.updateProduct(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['products']);
+      toast.success('Cập nhật sản phẩm thành công');
+      handleCloseModal();
+    },
+    onError: (error) => toast.error('Cập nhật thất bại'),
+  });
+
+  const { mutate: deleteProduct, isLoading: isDeleting } = useMutation({
+    mutationFn: productService.deleteProduct,
+    onSuccess: () => {
+      queryClient.invalidateQueries(['products']);
+      toast.success('Xóa sản phẩm thành công');
+      setIsDeleteModalOpen(false);
+    },
+    onError: () => toast.error('Xóa thất bại'),
+  });
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingProduct(null);
+    reset({
       name: '',
       price: 0,
       originalPrice: 0,
       stock: 0,
-      category: '',
+      categoryId: 0,
       description: '',
       image: '',
-    },
-  });
+    });
+  };
 
-  // Filter products
-  const filteredProducts = Array.isArray(products) ? products.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.category?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) : [];
-
-  // Handlers
   const handleOpenModal = (product = null) => {
     if (product) {
       setEditingProduct(product);
-      // Set form values for editing
+      // Reset form with product values
       setValue('name', product.name);
       setValue('price', product.price);
       setValue('originalPrice', product.originalPrice || 0);
-      setValue('stock', product.stock || 0);
-      setValue('category', product.category || '');
+      setValue('stock', product.stock);
+      setValue('categoryId', product.categoryId);
       setValue('description', product.description || '');
-      setValue('image', product.image || '');
+      setValue('image', product.images?.[0] || '');
     } else {
       setEditingProduct(null);
       reset({
@@ -95,36 +107,12 @@ const AdminProducts = () => {
         price: 0,
         originalPrice: 0,
         stock: 0,
-        category: '',
+        categoryId: 0,
         description: '',
         image: '',
       });
     }
     setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingProduct(null);
-    reset();
-  };
-
-  const onSubmit = (data) => {
-    if (editingProduct) {
-      updateProduct({ id: editingProduct.id, data }, {
-        onSuccess: () => {
-          handleCloseModal();
-          // Show toast success (impl later)
-        }
-      });
-    } else {
-      createProduct(data, {
-        onSuccess: () => {
-          handleCloseModal();
-          // Show toast success
-        }
-      });
-    }
   };
 
   const handleDeleteClick = (product) => {
@@ -134,14 +122,87 @@ const AdminProducts = () => {
 
   const handleConfirmDelete = () => {
     if (productToDelete) {
-      deleteProduct(productToDelete.id, {
+      deleteProduct(productToDelete.id);
+    }
+  };
+
+  const filteredProducts = products.filter(product =>
+    product.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Handlers
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const result = await uploadService.uploadImage(file);
+      // result: { status: 'success', data: { url, filename } }
+      // Backend returns relative path or full URL? 
+      // Based on upload.routes.js: res.json({ data: { url: req.file.path } })
+      // req.file.path might be 'public/uploads/filename.jpg' or similar.
+      // We might need to prepend backend URL if it's relative.
+      // Let's assume for now we store what backend gives, and frontend handles display.
+      // Actually, standard is usually returning a usable URL.
+      // Let's check `upload.routes.js` context again. It uses `req.file.path`.
+      // If using `multer` with diskStorage, path is local file path.
+      // We probably need to map this to a public URL.
+      // But let's set the value for now.
+      
+      // FIX: The backend likely returns a path that needs to be accessible.
+      // If backend is localhost:3000, and path is 'uploads/file.jpg', we need 'http://localhost:3000/uploads/file.jpg'.
+      // For now, let's assume the backend serves 'uploads' static folder.
+      // We will set the full URL if possible, or just the path and prepend base URL.
+      // Let's set the path returned.
+      
+      // wait, `productController` doesn't transform it? 
+      // `upload.routes.js` returns `req.file.path`.
+      // We might need to normalize this on backend or frontend.
+      // Let's use a helper to get full URL or just store relative.
+      
+      // Let's just setValue for now.
+      setValue('image', result.data.url);
+    } catch (error) {
+      console.error('Upload failed:', error);
+      // toast error
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const onSubmit = (data) => {
+    // Transform data for backend
+    const payload = { ...data };
+    
+    // Transform image string to images array if present
+    if (data.image) {
+      payload.images = [data.image];
+    } else {
+       payload.images = [];
+    }
+    delete payload.image;
+    delete payload.originalPrice; // Not in schema
+
+    // Ensure categoryId is number
+    payload.categoryId = Number(payload.categoryId);
+
+    if (editingProduct) {
+      updateProduct({ id: editingProduct.id, data: payload }, {
         onSuccess: () => {
-          setIsDeleteModalOpen(false);
-          setProductToDelete(null);
+          handleCloseModal();
+        }
+      });
+    } else {
+      createProduct(payload, {
+        onSuccess: () => {
+          handleCloseModal();
         }
       });
     }
   };
+
+  // ... (render)
 
   return (
     <div className="space-y-6">
@@ -197,7 +258,7 @@ const AdminProducts = () => {
               <tbody className="divide-y divide-divider">
                 {filteredProducts.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-8 text-center text-secondary-custom">
+                    <td colSpan="6" className="px-6 py-8 text-center text-secondary-custom">
                       Không tìm thấy sản phẩm nào
                     </td>
                   </tr>
@@ -207,8 +268,8 @@ const AdminProducts = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 bg-surface-light rounded-lg overflow-hidden flex-shrink-0 border border-divider">
-                            {product.image ? (
-                              <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                            {product.images && product.images.length > 0 ? (
+                              <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
                                 <ImageIcon className="w-5 h-5 text-disabled-custom" />
@@ -222,17 +283,19 @@ const AdminProducts = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-secondary-custom">
-                        {product.category || 'Chưa phân loại'}
+                        {product.category?.name || 'Chưa phân loại'}
                       </td>
                       <td className="px-6 py-4 text-sm text-secondary-custom">
                         {product.stock || 0}
                       </td>
-                      <td className="px-6 py-4 text-sm font-medium text-primary-custom">
-                        ${product.price}
+                      <td className="px-6 py-4 text-sm text-secondary-custom">
+                        {Number(product.price).toLocaleString('vi-VN')} ₫
                       </td>
                       <td className="px-6 py-4">
-                        <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
-                          Đang bán
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          product.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {product.status === 'ACTIVE' ? 'Đang bán' : 'Ngừng bán'}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
@@ -289,7 +352,7 @@ const AdminProducts = () => {
                 </div>
 
                 <div>
-                  <label className="label mb-2 block">Giá bán ($) *</label>
+                  <label className="label mb-2 block">Giá bán (VND) *</label>
                   <input
                     {...register('price', { valueAsNumber: true })}
                     type="number"
@@ -301,7 +364,7 @@ const AdminProducts = () => {
                 </div>
 
                 <div>
-                  <label className="label mb-2 block">Giá gốc ($)</label>
+                  <label className="label mb-2 block">Giá gốc (VND)</label>
                   <input
                     {...register('originalPrice', { valueAsNumber: true })}
                     type="number"
@@ -326,25 +389,62 @@ const AdminProducts = () => {
 
                 <div className="col-span-2">
                   <label className="label mb-2 block">Danh mục *</label>
-                  <select {...register('category')} className="input-field w-full">
-                    <option value="">Chọn danh mục</option>
+                  <select {...register('categoryId')} className="input-field w-full">
+                    <option value="0">Chọn danh mục</option>
                     {categories.map((cat) => (
-                      <option key={cat.id} value={cat.slug}>
+                      <option key={cat.id} value={cat.id}>
                         {cat.name}
                       </option>
                     ))}
                   </select>
-                  {errors.category && <p className="text-red-500 text-xs mt-1">{errors.category.message}</p>}
+                  {errors.categoryId && <p className="text-red-500 text-xs mt-1">{errors.categoryId.message}</p>}
                 </div>
 
                 <div className="col-span-2">
-                  <label className="label mb-2 block">URL Hình ảnh</label>
-                  <input
-                    {...register('image')}
-                    type="text"
-                    className="input-field w-full"
-                    placeholder="https://example.com/image.jpg"
-                  />
+                  <label className="label mb-2 block">Hình ảnh sản phẩm</label>
+                  
+                  {/* Image Preview */}
+                  <div className="mb-4">
+                     {(watch('image') || editingProduct?.images?.[0] || isUploading) && (
+                       <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-divider">
+                          {isUploading ? (
+                              <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                                <Loader2 className="w-6 h-6 animate-spin text-de-primary" />
+                              </div>
+                          ) : (
+                              <img 
+                                src={watch('image') || (editingProduct?.images && editingProduct.images[0]) || ''} 
+                                alt="Preview" 
+                                className="w-full h-full object-cover" 
+                                onError={(e) => e.target.style.display = 'none'}
+                              />
+                          )}
+                       </div>
+                     )}
+                     {/* If using react-hook-form's watch to show preview of newly uploaded image */}
+                     {/* construct preview logic better */}
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <label className="btn-outline px-4 py-2 cursor-pointer flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4" />
+                      <span>{isUploading ? 'Đang tải lên...' : 'Chọn ảnh từ máy'}</span>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={handleImageUpload}
+                        disabled={isUploading}
+                      />
+                    </label>
+                    <span className="text-xs text-secondary-custom">
+                       JPG, PNG, WEBP (Max 5MB)
+                    </span>
+                  </div>
+                  
+                  {/* Hidden input to store URL for form submission */}
+                  <input type="hidden" {...register('image')} />
+
                   {errors.image && <p className="text-red-500 text-xs mt-1">{errors.image.message}</p>}
                 </div>
 

@@ -2,7 +2,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Star, ShoppingCart, Heart, Minus, Plus, ChevronRight, Loader2, AlertCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useProduct } from '@/hooks';
-import { useCartStore } from '@/stores';
+import { useCartStore, useAuthStore } from '@/stores';
 import toast from 'react-hot-toast';
 
 // Import product images for fallback
@@ -83,6 +83,53 @@ const ProductDetailPage = () => {
     });
   };
 
+  // Wishlist state
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const { user } = useAuthStore();
+
+  // Check wishlist status on load
+  useEffect(() => {
+    const checkWishlist = async () => {
+      if (user && product.id) {
+        try {
+          const { wishlistService } = await import('@/api');
+          const response = await wishlistService.checkStatus(product.id);
+          setIsWishlisted(response.data.isWishlisted);
+        } catch (error) {
+          console.error('Failed to check wishlist status', error);
+        }
+      }
+    };
+    checkWishlist();
+  }, [user, product.id]);
+
+  /**
+   * Handle Toggle Wishlist
+   */
+  const handleToggleWishlist = async () => {
+    if (!user) {
+      toast.error('Vui lòng đăng nhập để thêm vào danh sách yêu thích');
+      return;
+    }
+
+    try {
+      const { wishlistService } = await import('@/api');
+      
+      if (isWishlisted) {
+        await wishlistService.removeFromWishlist(product.id);
+        setIsWishlisted(false);
+        toast.success('Đã xóa khỏi danh sách yêu thích');
+      } else {
+        await wishlistService.addToWishlist(product.id);
+        setIsWishlisted(true);
+        toast.success('Đã thêm vào danh sách yêu thích');
+      }
+    } catch (error) {
+      toast.error('Có lỗi xảy ra');
+      console.error(error);
+    }
+  };
+
   /**
    * Handle Add to Cart
    * B2C Flow: When user clicks "Add to Cart":
@@ -90,10 +137,10 @@ const ProductDetailPage = () => {
    * 2. Cart state persists to localStorage
    * 3. Header cart badge updates automatically
    */
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (quantity > availableStock) return;
 
-    const result = addItem({
+    const result = await addItem({
       id: Number(product.id),
       name: product.name,
       price: product.price,
@@ -199,10 +246,10 @@ const ProductDetailPage = () => {
 
               {/* Price */}
               <div className="flex items-center gap-4">
-                <span className="heading-3 text-de-primary">${product.price}</span>
+                <span className="heading-3 text-de-primary">{Number(product.price).toLocaleString('vi-VN')}₫</span>
                 {product.originalPrice > product.price && (
                   <span className="subtitle-regular text-disabled-custom line-through">
-                    ${product.originalPrice}
+                    {Number(product.originalPrice).toLocaleString('vi-VN')}₫
                   </span>
                 )}
               </div>
@@ -287,8 +334,15 @@ const ProductDetailPage = () => {
               </button>
 
               {/* Wishlist */}
-              <button className="p-4 border border-divider rounded-lg hover:border-de-primary hover:text-de-primary transition-colors">
-                <Heart className="w-5 h-5" />
+              <button 
+                onClick={handleToggleWishlist}
+                className={`p-4 border border-divider rounded-lg transition-colors ${
+                  isWishlisted 
+                    ? 'border-red-500 text-red-500 bg-red-50 hover:bg-red-100' 
+                    : 'hover:border-de-primary hover:text-de-primary'
+                }`}
+              >
+                <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current' : ''}`} />
               </button>
             </div>
           </div>
@@ -297,5 +351,5 @@ const ProductDetailPage = () => {
     </div>
   );
 };
-  
+
 export default ProductDetailPage;
