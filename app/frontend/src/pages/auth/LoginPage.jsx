@@ -47,9 +47,14 @@ const LoginPage = () => {
       console.log('User:', user, 'Token:', accessToken);
       setUser(user, accessToken);
       
-      // Redirect to where they came from, or home
-      const from = location.state?.from?.pathname || '/';
-      navigate(from, { replace: true });
+      // Redirect logic based on role
+      if (user?.role === 'ADMIN') {
+        navigate('/admin', { replace: true });
+      } else {
+        // Redirect to where they came from, or home for regular users
+        const from = location.state?.from?.pathname || '/';
+        navigate(from, { replace: true });
+      }
     },
     onError: (error) => {
       console.error('Login failed:', error);

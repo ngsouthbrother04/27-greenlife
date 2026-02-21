@@ -1,4 +1,4 @@
-import { Outlet, Link, NavLink } from 'react-router-dom';
+import { Outlet, Link, NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Package, 
@@ -14,6 +14,8 @@ import { useState } from 'react';
 /**
  * Admin navigation sidebar links
  */
+import { useAuthStore } from '@/stores';
+
 const adminNavLinks = [
   { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
   { name: 'Sản phẩm', path: '/admin/products', icon: Package },
@@ -39,6 +41,14 @@ const adminNavLinks = [
  */
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const navigate = useNavigate();
+  const { logout } = useAuthStore();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/auth/login', { replace: true });
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -77,13 +87,13 @@ const AdminLayout = () => {
 
         {/* Logout Button */}
         <div className="p-4 border-t border-gray-200">
-          <Link
-            to="/"
-            className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
           >
             <LogOut className="w-5 h-5" />
-            Về trang chủ
-          </Link>
+            Đăng xuất
+          </button>
         </div>
       </aside>
 
@@ -140,13 +150,13 @@ const AdminLayout = () => {
 
         {/* Mobile Logout */}
         <div className="p-4 border-t border-gray-200">
-          <Link
-            to="/"
-            className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
           >
             <LogOut className="w-5 h-5" />
-            Về trang chủ
-          </Link>
+            Đăng xuất
+          </button>
         </div>
       </aside>
 

@@ -6,15 +6,27 @@ const prisma = new PrismaClient();
 
 /**
  * Get Dashboard Stats
+ * Includes grouping logic for trailing 30 days of data for charts
  */
 export const getDashboardStats = async () => {
-  const [totalUsers, totalOrders, totalProducts, revenueAgg] = await Promise.all([
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const [totalUsers, totalOrders, totalProducts, revenueAgg, recentOrders, recentUsers] = await Promise.all([
     prisma.user.count({ where: { role: 'CUSTOMER' } }),
     prisma.order.count(),
     prisma.product.count({ where: { status: 'ACTIVE' } }),
     prisma.order.aggregate({
       _sum: { total: true },
       where: { status: { in: ['PAID', 'COMPLETED', 'DELIVERED'] } }
+    }),
+    prisma.order.findMany({
+      where: { createdAt: { gte: thirtyDaysAgo } },
+      select: { createdAt: true, total: true, status: true }
+    }),
+    prisma.user.findMany({
+      where: { createdAt: { gte: thirtyDaysAgo }, role: 'CUSTOMER' },
+      select: { createdAt: true }
     })
   ]);
 
@@ -42,12 +54,44 @@ export const getDashboardStats = async () => {
     })
   );
 
+  // Generate array for last 30 days to ensure continuous charts (even on days with no data)
+  const chartDataMap = new Map();
+  for (let i = 29; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const dateString = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+    chartDataMap.set(dateString, { date: dateString, revenue: 0, orders: 0, customers: 0 });
+  }
+
+  // Populate chart map with real data
+  recentOrders.forEach(order => {
+    const dateString = order.createdAt.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+    if (chartDataMap.has(dateString)) {
+      const existing = chartDataMap.get(dateString);
+      existing.orders += 1;
+      if (['PAID', 'COMPLETED', 'DELIVERED'].includes(order.status)) {
+        existing.revenue += Number(order.total || 0);
+      }
+    }
+  });
+
+  recentUsers.forEach(user => {
+    const dateString = user.createdAt.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+    if (chartDataMap.has(dateString)) {
+      const existing = chartDataMap.get(dateString);
+      existing.customers += 1;
+    }
+  });
+
+  const chartData = Array.from(chartDataMap.values());
+
   return {
     totalUsers,
     totalOrders,
     totalProducts,
     totalRevenue: revenueAgg._sum.total || 0,
-    topProducts
+    topProducts,
+    chartData
   };
 };
 
@@ -97,19 +141,36 @@ export const getAllOrders = async (query) => {
  * Update Order Status
  */
 export const updateOrderStatus = async (orderId, status) => {
-  const order = await prisma.order.findUnique({ where: { id: Number(orderId) } });
+  const order = await prisma.order.findUnique({
+    where: { id: Number(orderId) },
+    include: { payment: true }
+  });
+
   if (!order) throw new ApiError(StatusCodes.NOT_FOUND, 'Order not found');
 
-  return await prisma.order.update({
-    where: { id: Number(orderId) },
-    // The instruction "Remove duplicate data: { status }" was interpreted as removing this line.
-    // However, this line is essential for the update operation and is not a duplicate.
-    // Removing it would lead to a syntax error and functional breakage.
-    // As per the instruction to "Make sure to incorporate the change in a way so that the resulting file is syntactically correct",
-    // and given that the line is not duplicated in the original code,
-    // this specific instruction cannot be faithfully applied without breaking the code.
-    // Therefore, no change is made to this line to maintain code integrity.
-    data: { status }
+  return await prisma.$transaction(async (tx) => {
+    const updatedOrder = await tx.order.update({
+      where: { id: Number(orderId) },
+      data: { status }
+    });
+
+    // Sync Payment status if Order status becomes PAID or COMPLETED
+    if ((status === 'PAID' || status === 'COMPLETED') && order.payment && order.payment.status !== 'SUCCESS') {
+      await tx.payment.update({
+        where: { id: order.payment.id },
+        data: { status: 'SUCCESS', paidAt: new Date() }
+      });
+    }
+
+    // Sync Payment status if Order status becomes CANCELLED
+    if (status === 'CANCELLED' && order.payment && order.payment.status !== 'FAILED') {
+      await tx.payment.update({
+        where: { id: order.payment.id },
+        data: { status: 'FAILED' }
+      });
+    }
+
+    return updatedOrder;
   });
 };
 
@@ -161,11 +222,23 @@ export const deleteOrder = async (id) => {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Order not found');
   }
 
-  // Use a transaction to ensure all related data is deleted if cascade isn't set up perfectly,
-  // though typically Prisma schema handles this.
-  // Assuming simple delete for now.
-  await prisma.order.delete({
-    where: { id: Number(id) }
+  // Use a transaction to ensure all related data is deleted 
+  // because schema.prisma does not have onDelete: Cascade set up
+  await prisma.$transaction(async (tx) => {
+    // 1. Delete associated OrderItems
+    await tx.orderItem.deleteMany({
+      where: { orderId: Number(id) }
+    });
+
+    // 2. Delete associated Payment (if exists)
+    await tx.payment.deleteMany({
+      where: { orderId: Number(id) }
+    });
+
+    // 3. Delete the Order itself
+    await tx.order.delete({
+      where: { id: Number(id) }
+    });
   });
 
   return { message: 'Order deleted successfully' };

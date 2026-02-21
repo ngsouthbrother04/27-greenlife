@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate, Link } from 'react-router-dom';
-import { useCartStore } from '@/stores';
+import { useCartStore, useAuthStore } from '@/stores';
 import orderService from '@/api/orderService';
 import { Loader2, ArrowLeft, ShieldCheck, Truck, CreditCard, Banknote } from 'lucide-react';
 import { useState } from 'react';
@@ -13,7 +13,7 @@ import toast from 'react-hot-toast';
 const checkoutSchema = z.object({
   fullName: z.string().min(2, 'Full name is required (min 2 chars)'),
   phone: z.string().regex(/^[0-9]{10}$/, 'Phone number must be 10 digits'),
-  email: z.string().email('Invalid email address'),
+  email: z.string().email('Invalid email address').or(z.literal('')),
   address: z.string().min(5, 'Address is required (min 5 chars)'),
   paymentMethod: z.enum(['cod', 'banking', 'momo'], {
     required_error: 'Please select a payment method',
@@ -24,6 +24,7 @@ const checkoutSchema = z.object({
 const Checkout = () => {
   const navigate = useNavigate();
   const { items, getTotalPrice, clearCart } = useCartStore();
+  const { user } = useAuthStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form Setup
@@ -50,6 +51,7 @@ const Checkout = () => {
     try {
       const orderData = {
         ...data,
+        email: data.email || user?.email,
         items: items.map(item => ({
           productId: item.id,
           quantity: item.quantity,
@@ -137,13 +139,13 @@ const Checkout = () => {
 
                   {/* Email */}
                   <div className="space-y-2 md:col-span-2">
-                    <label className="text-sm font-medium text-gray-700">Email Address</label>
+                    <label className="text-sm font-medium text-gray-700">Email Address (Optional)</label>
                     <input
                       {...register('email')}
                       className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-de-primary/20 outline-none transition-all ${
                         errors.email ? 'border-red-500' : 'border-gray-200 focus:border-de-primary'
                       }`}
-                      placeholder="john@example.com"
+                      placeholder={user?.email || "john@example.com"}
                     />
                     {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
                   </div>

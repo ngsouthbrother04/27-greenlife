@@ -1,6 +1,21 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import { PublicLayout, AdminLayout, AuthLayout } from '@/layouts';
 import PrivateRoute from '@/components/PrivateRoute';
+import { useAuthStore } from '@/stores';
+
+/**
+ * CustomerOnlyRoute Component
+ * Prevents admins from accessing the public e-commerce routes.
+ */
+const CustomerOnlyRoute = () => {
+  const { user, isAuthenticated } = useAuthStore();
+  
+  if (isAuthenticated() && user?.role === 'ADMIN') {
+    return <Navigate to="/admin" replace />;
+  }
+  
+  return <Outlet />;
+};
 
 // Public pages
 import HomePage from '@/pages/home/HomePage';
@@ -28,10 +43,13 @@ import AdminCategories from '@/pages/admin/AdminCategories';
  * Application Routes Configuration
  */
 const router = createBrowserRouter([
-  // Public routes
+  // Public routes (Admin restricted)
   {
-    path: "/",
-    element: <PublicLayout />,
+    element: <CustomerOnlyRoute />,
+    children: [
+      {
+        path: "/",
+        element: <PublicLayout />,
     children: [
       { index: true, element: <HomePage /> },
       { path: 'products', element: <ProductListPage /> },
@@ -39,6 +57,8 @@ const router = createBrowserRouter([
       { path: 'cart', element: <CartPage /> },
       { path: 'wishlist', element: <WishlistPage /> },
 
+        ]
+      }
     ]
   },
   
@@ -54,16 +74,21 @@ const router = createBrowserRouter([
     ]
   },
   
-  // Protected User Routes
+  // Protected User Routes (Admin restricted)
   {
-    element: <PrivateRoute />, // Protects routes for ANY authenticated user
+    element: <CustomerOnlyRoute />,
     children: [
+      {
+        element: <PrivateRoute />, // Protects routes for ANY authenticated user
+        children: [
       {
          element: <PublicLayout />, // Re-use Public Layout (Header/Footer)
          children: [
            { path: '/profile', element: <ProfilePage /> },
            { path: '/checkout', element: <CheckoutPage /> },
          ]
+      }
+        ]
       }
     ]
   },

@@ -4,9 +4,16 @@ import { StatusCodes } from 'http-status-codes';
 export const createOrder = async (req, res, next) => {
   try {
     const userId = req.user.sub;
-    const { shippingAddress, note, items, totalAmount } = req.body;
+    const { fullName, phone, email, address, shippingAddress, note, items, totalAmount } = req.body;
 
-    const order = await orderService.createOrder(userId, shippingAddress, note, items, totalAmount);
+    const finalShippingAddress = shippingAddress || JSON.stringify({
+      fullName,
+      phone,
+      email,
+      address
+    });
+
+    const order = await orderService.createOrder(userId, finalShippingAddress, note, items, totalAmount);
 
     res.status(StatusCodes.CREATED).json({
       status: 'success',
