@@ -80,6 +80,7 @@ model Product {
   description   String?
   price         Decimal       @db.Decimal(10, 2)
   stock         Int           @default(0)
+  reservedStock Int           @default(0)
   images        String[]      // Replaced single imageUrl with array
   averageRating Float         @default(0)
   status        ProductStatus @default(ACTIVE)

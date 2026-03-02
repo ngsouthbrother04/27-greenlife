@@ -238,30 +238,53 @@ const AdminOrders = () => {
                   <div className="bg-gray-50/80 p-4 rounded-xl border border-gray-100">
                     {(() => {
                       let shipping = {};
-                      try {
-                        shipping = JSON.parse(selectedOrder.shippingAddress || '{}');
-                      } catch (e) {
-                        shipping = { address: selectedOrder.shippingAddress };
-                      }
                       
+                      // 1. Phân tích `shippingAddress` từ Order JSON text hoặc lấy từ object
+                      if (typeof selectedOrder.shippingAddress === 'string') {
+                         try {
+                           shipping = JSON.parse(selectedOrder.shippingAddress);
+                         } catch (e) {
+                           shipping = { detail: selectedOrder.shippingAddress };
+                         }
+                      } else if (typeof selectedOrder.shippingAddress === 'object') {
+                         shipping = selectedOrder.shippingAddress || {};
+                      }
+
+                      // 2. Logic ưu tiên (Shipping info form > User account info > 'N/A')
+                      const name = shipping.fullName || shipping.receiver || selectedOrder.user?.fullName || 'Guest';
+                      const phone = shipping.phone || selectedOrder.user?.phone || 'N/A';
+                      const email = shipping.email || selectedOrder.user?.email || 'N/A';
+                      
+                      // 3. Format address string từ object
+                      let addressStr = 'N/A';
+                      if (typeof shipping === 'string') {
+                         addressStr = shipping;
+                      } else if (shipping.detail || shipping.address) {
+                         const street = shipping.detail || shipping.address || '';
+                         const city = shipping.city ? `, ${shipping.city}` : '';
+                         addressStr = `${street}${city}`;
+                      } else if (typeof selectedOrder.shippingAddress === 'string') {
+                         addressStr = selectedOrder.shippingAddress;
+                      }
+
                       return (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6">
                           <div>
                             <span className="text-gray-500 text-xs font-medium block mb-1">Name</span>
-                            <p className="font-medium text-gray-900">{shipping.fullName || shipping.receiver || selectedOrder.user?.fullName || 'Guest'}</p>
+                            <p className="font-medium text-gray-900">{name}</p>
                           </div>
                           <div>
                             <span className="text-gray-500 text-xs font-medium block mb-1">Phone</span>
-                            <p className="font-medium text-gray-900">{shipping.phone || selectedOrder.user?.phone || 'N/A'}</p>
+                            <p className="font-medium text-gray-900">{phone}</p>
                           </div>
                           <div>
                             <span className="text-gray-500 text-xs font-medium block mb-1">Email</span>
-                            <p className="font-medium text-gray-900 truncate">{shipping.email || selectedOrder.user?.email || 'N/A'}</p>
+                            <p className="font-medium text-gray-900 truncate">{email}</p>
                           </div>
                           <div>
                             <span className="text-gray-500 text-xs font-medium block mb-1">Address</span>
-                            <p className="font-medium text-gray-900 line-clamp-2" title={shipping.address || shipping.detail ? `${shipping.detail || shipping.address || ''}${shipping.city ? `, ${shipping.city}` : ''}` : (selectedOrder.shippingAddress || 'N/A')}>
-                              {shipping.address || shipping.detail ? `${shipping.detail || shipping.address || ''}${shipping.city ? `, ${shipping.city}` : ''}` : (selectedOrder.shippingAddress || 'N/A')}
+                            <p className="font-medium text-gray-900 line-clamp-2" title={addressStr}>
+                               {addressStr}
                             </p>
                           </div>
                         </div>

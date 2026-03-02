@@ -211,7 +211,7 @@ export const getAllOrders = async (query) => {
 export const updateOrderStatus = async (orderId, status) => {
   const order = await prisma.order.findUnique({
     where: { id: Number(orderId) },
-    include: { payment: true }
+    include: { payment: true, items: true }
   });
 
   if (!order) throw new ApiError(StatusCodes.NOT_FOUND, 'Order not found');
@@ -221,6 +221,34 @@ export const updateOrderStatus = async (orderId, status) => {
       where: { id: Number(orderId) },
       data: { status }
     });
+
+    // Handle stock based on status transition
+    if (status === 'SHIPPING' && order.status !== 'SHIPPING' && order.status !== 'DELIVERED' && order.status !== 'COMPLETED') {
+      if (order.payment?.method === 'COD') {
+        for (const item of order.items) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: {
+              stock: { decrement: item.quantity },
+              reservedStock: { decrement: item.quantity }
+            }
+          });
+        }
+      }
+    }
+
+    if (status === 'CANCELLED' && order.status !== 'CANCELLED') {
+      const isReservedOnly = (order.payment?.method === 'COD' && order.status === 'PENDING') || (order.payment?.method === 'MOMO' && order.status === 'PENDING');
+      const isStockDeducted = (order.payment?.method === 'COD' && (order.status === 'SHIPPING' || order.status === 'DELIVERED')) || (order.payment?.method === 'MOMO' && order.status !== 'PENDING');
+
+      for (const item of order.items) {
+        if (isReservedOnly) {
+          await tx.product.update({ where: { id: item.productId }, data: { reservedStock: { decrement: item.quantity } } });
+        } else if (isStockDeducted) {
+          await tx.product.update({ where: { id: item.productId }, data: { stock: { increment: item.quantity } } });
+        }
+      }
+    }
 
     // Sync Payment status if Order status becomes PAID or COMPLETED
     if ((status === 'PAID' || status === 'COMPLETED') && order.payment && order.payment.status !== 'SUCCESS') {

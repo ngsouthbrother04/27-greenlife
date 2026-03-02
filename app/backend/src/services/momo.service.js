@@ -146,12 +146,13 @@ export const handleMoMoCallback = async (data) => {
         include: { items: true }
       });
 
-      // 3. Deduct Stock
+      // 3. Deduct Stock and Release Reservation
       for (const item of order.items) {
         await tx.product.update({
           where: { id: item.productId },
           data: {
-            stock: { decrement: item.quantity }
+            stock: { decrement: item.quantity },
+            reservedStock: { decrement: item.quantity }
           }
         });
       }
@@ -168,10 +169,21 @@ export const handleMoMoCallback = async (data) => {
       });
 
       // 2. Cancel Order
-      await tx.order.update({
+      const order = await tx.order.update({
         where: { id: internalOrderId },
-        data: { status: 'CANCELLED' }
+        data: { status: 'CANCELLED' },
+        include: { items: true }
       });
+
+      // 3. Release Reservation
+      for (const item of order.items) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: {
+            reservedStock: { decrement: item.quantity }
+          }
+        });
+      }
     });
 
     console.log(`❌ Payment Failed/Expired for Order #${internalOrderId}. Order Cancelled.`);

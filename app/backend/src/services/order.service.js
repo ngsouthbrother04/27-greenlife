@@ -7,8 +7,9 @@ const prisma = new PrismaClient();
 /**
  * Create order from cart OR directly from items (Frontend Cart)
  */
-export const createOrder = async (userId, shippingAddress, note, items = null, totalAmount = null) => {
+export const createOrder = async (userId, shippingAddress, note, items = null, totalAmount = null, paymentMethodStr = 'COD') => {
   let orderItems = [];
+
   let finalTotal = 0;
 
   if (items && items.length > 0) {
@@ -19,7 +20,7 @@ export const createOrder = async (userId, shippingAddress, note, items = null, t
     for (const item of items) {
       const product = await prisma.product.findUnique({ where: { id: item.productId } });
       if (!product) throw new ApiError(StatusCodes.BAD_REQUEST, `Product ${item.productId} not found`);
-      if (product.stock < item.quantity) {
+      if (product.stock - product.reservedStock < item.quantity) {
         throw new ApiError(StatusCodes.BAD_REQUEST, `Product ${product.name} is out of stock`);
       }
       finalTotal += Number(product.price) * item.quantity;
@@ -42,7 +43,7 @@ export const createOrder = async (userId, shippingAddress, note, items = null, t
     }
 
     for (const item of cart.items) {
-      if (item.product.stock < item.quantity) {
+      if (item.product.stock - item.product.reservedStock < item.quantity) {
         throw new ApiError(
           StatusCodes.BAD_REQUEST,
           `Product ${item.product.name} is out of stock or not enough quantity`
@@ -57,7 +58,10 @@ export const createOrder = async (userId, shippingAddress, note, items = null, t
     }
   }
 
-  // 3. Create Order and OrderItems in transaction
+  // Normalize payment method
+  const paymentMethod = paymentMethodStr.toUpperCase() === 'MOMO' ? 'MOMO' : 'COD';
+
+  // 3. Create Order, OrderItems, Payment and Handle Stock in transaction
   const order = await prisma.$transaction(async (tx) => {
     // Create Order
     const newOrder = await tx.order.create({
@@ -78,6 +82,26 @@ export const createOrder = async (userId, shippingAddress, note, items = null, t
           productId: item.productId,
           quantity: item.quantity,
           price: item.price
+        }
+      });
+    }
+
+    // Handle Payment Type
+    await tx.payment.create({
+      data: {
+        orderId: newOrder.id,
+        method: paymentMethod,
+        amount: finalTotal,
+        status: 'PENDING'
+      }
+    });
+
+    // Reserve stock immediately for ALL payment methods
+    for (const item of orderItems) {
+      await tx.product.update({
+        where: { id: item.productId },
+        data: {
+          reservedStock: { increment: item.quantity }
         }
       });
     }
@@ -192,8 +216,19 @@ export const cancelOrder = async (userId, orderId) => {
 
   const updatedOrder = await prisma.order.update({
     where: { id: Number(orderId) },
-    data: { status: 'CANCELLED' } // Should also handle payment refund logic if needed, but prompted says "Wait for payment success"
+    data: { status: 'CANCELLED' }, // Should also handle payment refund logic if needed, but prompted says "Wait for payment success"
+    include: { items: true }
   });
+
+  // Release reservation
+  for (const item of updatedOrder.items) {
+    await prisma.product.update({
+      where: { id: item.productId },
+      data: {
+        reservedStock: { decrement: item.quantity }
+      }
+    });
+  }
 
   return updatedOrder;
 };
