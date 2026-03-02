@@ -6,12 +6,12 @@ export const createOrder = async (req, res, next) => {
     const userId = req.user.sub;
     const { fullName, phone, email, address, shippingAddress, note, items, totalAmount } = req.body;
 
-    const finalShippingAddress = shippingAddress || JSON.stringify({
+    const finalShippingAddress = shippingAddress || {
       fullName,
       phone,
       email,
       address
-    });
+    };
 
     const order = await orderService.createOrder(userId, finalShippingAddress, note, items, totalAmount);
 

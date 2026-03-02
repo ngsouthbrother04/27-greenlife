@@ -3,7 +3,8 @@ import { StatusCodes } from 'http-status-codes';
 
 export const getDashboardStats = async (req, res, next) => {
   try {
-    const stats = await adminService.getDashboardStats();
+    const { range } = req.query;
+    const stats = await adminService.getDashboardStats(range);
     res.status(StatusCodes.OK).json({
       status: 'success',
       data: { stats }

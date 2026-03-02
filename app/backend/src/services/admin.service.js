@@ -6,26 +6,48 @@ const prisma = new PrismaClient();
 
 /**
  * Get Dashboard Stats
- * Includes grouping logic for trailing 30 days of data for charts
+ * Supports grouping logic for trailing 30 days, quarter (90 days), or year (12 months)
  */
-export const getDashboardStats = async () => {
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+export const getDashboardStats = async (range = '30d') => {
+  let startDate = new Date();
+
+  // Configure time ranges
+  if (range === 'year') {
+    startDate.setMonth(startDate.getMonth() - 11); // Last 12 months including current
+    startDate.setDate(1); // Start from beginning of the month
+  } else if (range === 'quarter') {
+    // We want 4 quarters trailing. 
+    // Start from 12 months ago to gather 4 full quarters
+    startDate.setMonth(startDate.getMonth() - 11);
+    startDate.setDate(1);
+  } else {
+    // Default to 30d
+    startDate.setDate(startDate.getDate() - 29); // Last 30 days
+  }
+
+  // Reset time to start of day for exact boundaries
+  startDate.setHours(0, 0, 0, 0);
 
   const [totalUsers, totalOrders, totalProducts, revenueAgg, recentOrders, recentUsers] = await Promise.all([
-    prisma.user.count({ where: { role: 'CUSTOMER' } }),
-    prisma.order.count(),
+    prisma.user.count({ where: { createdAt: { gte: startDate }, role: 'CUSTOMER' } }),
+    prisma.order.count({ where: { createdAt: { gte: startDate } } }),
     prisma.product.count({ where: { status: 'ACTIVE' } }),
     prisma.order.aggregate({
       _sum: { total: true },
-      where: { status: { in: ['PAID', 'COMPLETED', 'DELIVERED'] } }
+      where: {
+        createdAt: { gte: startDate },
+        OR: [
+          { status: 'COMPLETED' },
+          { status: 'PAID', payment: { method: 'MOMO' } }
+        ]
+      }
     }),
     prisma.order.findMany({
-      where: { createdAt: { gte: thirtyDaysAgo } },
-      select: { createdAt: true, total: true, status: true }
+      where: { createdAt: { gte: startDate } },
+      select: { createdAt: true, total: true, status: true, payment: { select: { method: true } } }
     }),
     prisma.user.findMany({
-      where: { createdAt: { gte: thirtyDaysAgo }, role: 'CUSTOMER' },
+      where: { createdAt: { gte: startDate }, role: 'CUSTOMER' },
       select: { createdAt: true }
     })
   ]);
@@ -54,29 +76,75 @@ export const getDashboardStats = async () => {
     })
   );
 
-  // Generate array for last 30 days to ensure continuous charts (even on days with no data)
+  // Setup chart data structure based on range
   const chartDataMap = new Map();
-  for (let i = 29; i >= 0; i--) {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-    const dateString = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
-    chartDataMap.set(dateString, { date: dateString, revenue: 0, orders: 0, customers: 0 });
+
+  if (range === 'year') {
+    // 12 Months: Format "MM/YYYY"
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      const m = (date.getMonth() + 1).toString().padStart(2, '0');
+      const y = date.getFullYear();
+      const dateString = `${m}/${y}`;
+      chartDataMap.set(dateString, { date: dateString, revenue: 0, orders: 0, customers: 0 });
+    }
+  } else if (range === 'quarter') {
+    // 4 Quarters trailing: Format "Q1/20xx"
+    for (let i = 3; i >= 0; i--) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - (i * 3));
+      const q = Math.floor(date.getMonth() / 3) + 1;
+      const y = date.getFullYear();
+      const dateString = `Q${q}/${y}`;
+      chartDataMap.set(dateString, { date: dateString, revenue: 0, orders: 0, customers: 0 });
+    }
+  } else {
+    // 30 Days (Default): Format "DD/MM"
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const d = date.getDate().toString().padStart(2, '0');
+      const m = (date.getMonth() + 1).toString().padStart(2, '0');
+      const dateString = `${d}/${m}`;
+      chartDataMap.set(dateString, { date: dateString, revenue: 0, orders: 0, customers: 0 });
+    }
   }
 
-  // Populate chart map with real data
+  // Helper to format map keys correctly 
+  const getFormatDate = (dateOb) => {
+    if (range === 'year') {
+      const m = (dateOb.getMonth() + 1).toString().padStart(2, '0');
+      const y = dateOb.getFullYear();
+      return `${m}/${y}`;
+    } else if (range === 'quarter') {
+      const q = Math.floor(dateOb.getMonth() / 3) + 1;
+      const y = dateOb.getFullYear();
+      return `Q${q}/${y}`;
+    } else {
+      const d = dateOb.getDate().toString().padStart(2, '0');
+      const m = (dateOb.getMonth() + 1).toString().padStart(2, '0');
+      return `${d}/${m}`;
+    }
+  };
+
   recentOrders.forEach(order => {
-    const dateString = order.createdAt.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+    const dateString = getFormatDate(order.createdAt);
     if (chartDataMap.has(dateString)) {
       const existing = chartDataMap.get(dateString);
       existing.orders += 1;
-      if (['PAID', 'COMPLETED', 'DELIVERED'].includes(order.status)) {
+
+      const isCompleted = order.status === 'COMPLETED';
+      const isMomoPaid = order.status === 'PAID' && order.payment?.method === 'MOMO';
+
+      if (isCompleted || isMomoPaid) {
         existing.revenue += Number(order.total || 0);
       }
     }
   });
 
   recentUsers.forEach(user => {
-    const dateString = user.createdAt.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+    const dateString = getFormatDate(user.createdAt);
     if (chartDataMap.has(dateString)) {
       const existing = chartDataMap.get(dateString);
       existing.customers += 1;

@@ -1,5 +1,5 @@
-const { PrismaClient } = require('@prisma/client');
-const bcrypt = require('bcryptjs');
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -87,7 +87,7 @@ async function main() {
         description: '100% biodegradable bamboo handle.',
         price: 50000,
         stock: 100,
-        images: ['https://images.unsplash.com/photo-1607613009820-a29f7bb6dcaf?auto=format&fit=crop&w=800&q=80'],
+        images: ['https://res.cloudinary.com/ddtnzyzvf/image/upload/v1771219614/greenlife-products/cxsnv0kfcidokn7flfyy.jpg'],
         categoryId: utensilCat.id,
         averageRating: 4.5,
       },
@@ -97,7 +97,7 @@ async function main() {
         description: 'Includes 4 straws and a cleaning brush.',
         price: 120000,
         stock: 50,
-        images: ['https://images.unsplash.com/photo-1576402187878-974f70c890a5?auto=format&fit=crop&w=800&q=80'],
+        images: ['https://res.cloudinary.com/ddtnzyzvf/image/upload/v1771219642/greenlife-products/e57wzgxnbljpla0nfrwj.jpg'],
         categoryId: utensilCat.id,
         averageRating: 5.0,
       },
@@ -107,7 +107,7 @@ async function main() {
         description: 'Perfect for grocery shopping.',
         price: 80000,
         stock: 200,
-        images: ['https://plus.unsplash.com/premium_photo-1681488262364-8aeb1b6aac7e?auto=format&fit=crop&w=800&q=80'],
+        images: ['https://res.cloudinary.com/ddtnzyzvf/image/upload/v1771219772/greenlife-products/ydors45b0efcrwdv3zy8.jpg'],
         categoryId: bagCat.id,
         averageRating: 4.0,
       },
@@ -117,7 +117,7 @@ async function main() {
         description: 'Handmade with natural ingredients.',
         price: 65000,
         stock: 80,
-        images: ['https://images.unsplash.com/photo-1600857544200-b2f666a9a2ec?auto=format&fit=crop&w=800&q=80'],
+        images: ['https://res.cloudinary.com/ddtnzyzvf/image/upload/v1771219712/greenlife-products/ngpbmod8gs1bzhbhxthe.jpg'],
         categoryId: careCat.id,
         averageRating: 4.8,
       },
@@ -152,7 +152,7 @@ async function main() {
       userId: customer1.id,
       total: 170000,
       status: 'COMPLETED',
-      shippingAddress: '123 Nguyen Trai, Q1, Ho Chi Minh',
+      shippingAddress: { detail: '123 Nguyen Trai, Q1, Ho Chi Minh' },
       items: {
         create: [
           { productId: bamboo.id, quantity: 1, price: 50000 },
@@ -177,7 +177,7 @@ async function main() {
       userId: customer2.id,
       total: 50000,
       status: 'PENDING',
-      shippingAddress: '789 Tran Hung Dao, Q5, Ho Chi Minh',
+      shippingAddress: { detail: '789 Tran Hung Dao, Q5, Ho Chi Minh' },
       items: {
         create: [
           { productId: bamboo.id, quantity: 1, price: 50000 },

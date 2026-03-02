@@ -16,10 +16,13 @@ import {
  */
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('revenue');
+  const [timeRange, setTimeRange] = useState('30d');
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['adminStats'],
-    queryFn: adminService.getStats,
+    queryKey: ['adminStats', timeRange],
+    queryFn: () => adminService.getStats(timeRange),
+    placeholderData: (previousData) => previousData,
+    staleTime: 5 * 60 * 1000, // Cache trong 5 phút để tránh gọi API liên tục
   });
 
   if (isLoading) {
@@ -30,7 +33,9 @@ const AdminDashboard = () => {
     return <div className="flex h-96 items-center justify-center text-red-500">Lỗi tải dữ liệu.</div>;
   }
 
-  const stats = data?.data?.stats || {};
+  // API returns { status: 'success', data: { stats: ... } }
+  // Axios wrapper adds another .data
+  const stats = data?.data?.data?.stats || {};
   const { totalUsers = 0, totalOrders = 0, totalProducts = 0, totalRevenue = 0, chartData = [] } = stats;
 
   // Format currency
@@ -69,7 +74,18 @@ const AdminDashboard = () => {
       {/* Charts Section */}
       <div className="bg-white rounded-xl border border-gray-200">
         <div className="border-b border-gray-200 p-4 sm:flex sm:items-center sm:justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Thống kê 30 ngày qua</h2>
+          <div className="flex items-center gap-4">
+            <h2 className="text-lg font-semibold text-gray-900">Báo cáo tăng trưởng</h2>
+            <select
+              value={timeRange}
+              onChange={(e) => setTimeRange(e.target.value)}
+              className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+              <option value="30d">30 ngày qua</option>
+              <option value="quarter">Quý (90 ngày qua)</option>
+              <option value="year">Năm nay (12 tháng)</option>
+            </select>
+          </div>
           
           <div className="mt-4 sm:ml-4 sm:mt-0">
             <nav className="-mb-px flex space-x-4 bg-gray-50/50 p-1 rounded-lg border border-gray-200" aria-label="Tabs">
@@ -134,7 +150,7 @@ const AdminDashboard = () => {
                 <BarChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="date" tick={{fontSize: 12}} />
-                  <YAxis stroke="#22c55e" />
+                  <YAxis stroke="#22c55e" allowDecimals={false} />
                   <Tooltip />
                   <Legend />
                   <Bar dataKey="orders" name="Đơn hàng" fill="#22c55e" radius={[4, 4, 0, 0]} />
@@ -143,7 +159,7 @@ const AdminDashboard = () => {
                 <BarChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="date" tick={{fontSize: 12}} />
-                  <YAxis stroke="#a855f7" />
+                  <YAxis stroke="#a855f7" allowDecimals={false} />
                   <Tooltip />
                   <Legend />
                   <Bar dataKey="customers" name="Khách hàng mới" fill="#a855f7" radius={[4, 4, 0, 0]} />

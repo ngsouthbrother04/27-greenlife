@@ -65,7 +65,7 @@ export const createOrder = async (userId, shippingAddress, note, items = null, t
         userId,
         total: finalTotal,
         status: 'PENDING',
-        shippingAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : (shippingAddress || 'Default Address'),
+        shippingAddress: typeof shippingAddress === 'string' ? { detail: shippingAddress } : (shippingAddress || { detail: 'Default Address' }),
         note
       }
     });

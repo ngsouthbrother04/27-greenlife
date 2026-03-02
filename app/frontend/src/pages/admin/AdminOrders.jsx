@@ -117,6 +117,7 @@ const AdminOrders = () => {
             <option value="PAID">Đã thanh toán (PAID)</option>
             <option value="SHIPPING">Đang giao (SHIPPING)</option>
             <option value="DELIVERED">Đã giao (DELIVERED)</option>
+            <option value="COMPLETED">Hoàn thành (COMPLETED)</option>
             <option value="CANCELLED">Đã hủy (CANCELLED)</option>
           </select>
         </div>
@@ -167,6 +168,7 @@ const AdminOrders = () => {
                             order.status === 'PAID' ? 'bg-green-100 text-green-800' :
                             order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
                             order.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                            order.status === 'COMPLETED' ? 'bg-purple-100 text-purple-800' :
                             'bg-blue-100 text-blue-800'
                           }`}
                         >
@@ -174,6 +176,7 @@ const AdminOrders = () => {
                           <option value="PAID">PAID</option>
                           <option value="SHIPPING">SHIPPING</option>
                           <option value="DELIVERED">DELIVERED</option>
+                          <option value="COMPLETED">COMPLETED</option>
                           <option value="CANCELLED">CANCELLED</option>
                         </select>
                       </td>
