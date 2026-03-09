@@ -23,6 +23,7 @@ import ProductListPage from '@/pages/product/ProductListPage';
 import ProductDetailPage from '@/pages/product/ProductDetailPage';
 import CartPage from '@/pages/cart/CartPage';
 import CheckoutPage from '@/pages/checkout/CheckoutPage';
+import MoMoResultPage from '@/pages/checkout/MoMoResultPage';
 import WishlistPage from '@/pages/wishlist/WishlistPage';
 
 // Auth pages
@@ -31,6 +32,7 @@ import RegisterPage from '@/pages/auth/RegisterPage';
 
 // User pages
 import ProfilePage from '@/pages/profile/ProfilePage';
+import OrderDetailPage from '@/pages/checkout/OrderDetailPage';
 
 // Admin pages
 import AdminDashboard from '@/pages/admin/AdminDashboard';
@@ -56,6 +58,7 @@ const router = createBrowserRouter([
       { path: 'products/:id', element: <ProductDetailPage /> },
       { path: 'cart', element: <CartPage /> },
       { path: 'wishlist', element: <WishlistPage /> },
+      { path: 'return-url', element: <MoMoResultPage /> },
 
         ]
       }
@@ -85,6 +88,7 @@ const router = createBrowserRouter([
          element: <PublicLayout />, // Re-use Public Layout (Header/Footer)
          children: [
            { path: '/profile', element: <ProfilePage /> },
+           { path: '/profile/orders/:id', element: <OrderDetailPage /> },
            { path: '/checkout', element: <CheckoutPage /> },
          ]
       }

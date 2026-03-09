@@ -64,15 +64,20 @@ const Checkout = () => {
       
       console.log('Order created:', response);
       
-      clearCart();
-
-      // Handle Mock Payment Redirect
-      if (response.paymentUrl) {
-        // Mock redirect for demo purposes
+      // Handle Payment Redirect or Success
+      if (data.paymentMethod === 'momo' && response.paymentUrl) {
+        // Mock redirect for MoMo - do NOT clear cart yet
         window.location.href = response.paymentUrl;
       } else {
-        toast.success('Đặt hàng thành công! (COD)');
-        navigate('/');
+        // COD logic: Clear cart, show success, redirect to order details
+        clearCart();
+        toast.success('Đặt hàng thành công! (Thanh toán khi nhận hàng)');
+        // Try to navigate to order details if we have the ID, otherwise fallback to orders list
+        if (response.data?.order?.id) {
+          navigate(`/profile/orders/${response.data.order.id}`);
+        } else {
+          navigate('/profile?tab=orders'); // Fallback
+        }
       }
     } catch (error) {
       console.error('Checkout error:', error);

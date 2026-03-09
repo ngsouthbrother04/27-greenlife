@@ -3,7 +3,9 @@ import { Star, ShoppingCart, Heart, Minus, Plus, ChevronRight, Loader2, AlertCir
 import { useState, useEffect } from 'react';
 import { useProduct } from '@/hooks';
 import { useCartStore, useAuthStore } from '@/stores';
+import productService from '@/api/productService';
 import toast from 'react-hot-toast';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 
 // Import product images for fallback
 import mouthwashImg from '@/assets/images/mouthwash_product_1770003186824.png';
@@ -157,6 +159,40 @@ const ProductDetailPage = () => {
     }
   };
 
+  // --- Add Review Logic ---
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const queryClient = useQueryClient();
+
+  const addReviewMutation = useMutation({
+    mutationFn: (data) => productService.addReview(product.id, data),
+    onSuccess: () => {
+      toast.success('Đánh giá của bạn đã được gửi thành công!');
+      setReviewRating(5);
+      setReviewComment('');
+      // Refresh the product details to show the new review
+      queryClient.invalidateQueries({ queryKey: ['product', id] });
+    },
+    onError: (err) => {
+      // Backend returns 403 if they haven't bought it, or other errors
+      const message = err.response?.data?.message || 'Không thể gửi đánh giá lúc này';
+      toast.error(message);
+    }
+  });
+
+  const handleSubmitReview = (e) => {
+    e.preventDefault();
+    if (!user) {
+      toast.error('Vui lòng đăng nhập để đánh giá sản phẩm');
+      return;
+    }
+    if (!reviewComment.trim()) {
+      toast.error('Vui lòng nhập nội dung đánh giá');
+      return;
+    }
+    addReviewMutation.mutate({ rating: reviewRating, comment: reviewComment });
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -235,12 +271,12 @@ const ProductDetailPage = () => {
                   {[...Array(5)].map((_, i) => (
                     <Star 
                       key={i} 
-                      className={`w-5 h-5 ${i < Math.floor(product.rating || 0) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+                      className={`w-5 h-5 ${i < Math.floor(product.averageRating || product.rating || 0) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
                     />
                   ))}
                 </div>
                 <span className="paragraph-2 text-secondary-custom">
-                  {product.rating} ({product.reviews || 0} reviews)
+                  {Number(product.averageRating || product.rating || 0).toFixed(1)} ({Array.isArray(product.reviews) ? product.reviews.length : (product.reviews || 0)} reviews)
                 </span>
               </div>
 
@@ -347,6 +383,116 @@ const ProductDetailPage = () => {
             </div>
           </div>
         </div>
+
+        {/* Reviews Section */}
+        <div className="mt-16 pt-12 border-t border-divider">
+          <h2 className="heading-3 text-primary-custom mb-8 flex items-center gap-2">
+            Đánh giá sản phẩm 
+            <span className="text-secondary-custom font-normal text-lg">
+              ({Array.isArray(product.reviews) ? product.reviews.length : (product.reviews || 0)})
+            </span>
+          </h2>
+
+          {/* Add Review Form */}
+          {user ? (
+            <div className="bg-white p-6 rounded-2xl border border-divider shadow-sm mb-8">
+              <h3 className="font-semibold text-primary-custom mb-4">Viết đánh giá của bạn</h3>
+              <form onSubmit={handleSubmitReview} className="space-y-4">
+                <div>
+                  <label className="block text-sm text-secondary-custom mb-2">Đánh giá sao</label>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        type="button"
+                        key={star}
+                        onClick={() => setReviewRating(star)}
+                        className="focus:outline-none"
+                      >
+                        <Star 
+                          className={`w-8 h-8 ${star <= reviewRating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200 hover:text-yellow-200 transition-colors'}`} 
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <textarea
+                    rows="3"
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    placeholder="Chia sẻ cảm nhận của bạn về sản phẩm này..."
+                    className="w-full p-4 rounded-xl border border-gray-200 focus:outline-none focus:border-de-primary focus:ring-1 focus:ring-de-primary resize-none transition-all"
+                    required
+                  ></textarea>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={addReviewMutation.isPending}
+                    className="btn-primary flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {addReviewMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                    Gửi đánh giá
+                  </button>
+                </div>
+              </form>
+            </div>
+          ) : (
+            <div className="bg-surface-light p-6 rounded-2xl mb-8 flex items-center justify-between">
+              <p className="text-secondary-custom">Vui lòng đăng nhập để viết đánh giá cho sản phẩm này.</p>
+              <Link to="/login" className="btn-outline">Đăng nhập</Link>
+            </div>
+          )}
+          
+          {Array.isArray(product.reviews) && product.reviews.length > 0 ? (
+            <div className="flex flex-col gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+              {product.reviews.map((review) => (
+                <div key={review.id} className="flex gap-4 p-4 rounded-xl transition-colors hover:bg-surface-light group">
+                  {/* Avatar */}
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-de-primary/10 flex items-center justify-center text-de-primary font-bold shadow-sm">
+                      {review.user?.fullName?.charAt(0)?.toUpperCase() || 'U'}
+                    </div>
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="flex-1">
+                    <div className="bg-gray-50/80 p-4 rounded-2xl rounded-tl-none border border-gray-100 group-hover:border-gray-200 transition-colors">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="font-semibold text-primary-custom text-sm">
+                            {review.user?.fullName || 'Người dùng ẩn danh'}
+                          </p>
+                          <p className="text-[11px] text-secondary-custom mt-0.5 font-medium">
+                            {new Date(review.createdAt).toLocaleDateString('vi-VN')}
+                          </p>
+                        </div>
+                        <div className="flex bg-white px-2 py-1 rounded-full border border-gray-100 shadow-sm">
+                          {[...Array(5)].map((_, i) => (
+                            <Star 
+                              key={i} 
+                              className={`w-3.5 h-3.5 ${i < (review.rating || 0) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-secondary-custom text-sm leading-relaxed">
+                        {review.comment}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-surface-light rounded-2xl p-12 text-center">
+              <Star className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="font-medium text-primary-custom mb-2">Chưa có đánh giá</h3>
+              <p className="text-secondary-custom text-sm">Sản phẩm này chưa có đánh giá nào từ khách hàng.</p>
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );

@@ -106,10 +106,13 @@ export const createOrder = async (userId, shippingAddress, note, items = null, t
       });
     }
 
-    // Clear Backend Cart if it exists
-    const cart = await tx.cart.findUnique({ where: { userId } });
-    if (cart) {
-      await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+    // Clear Backend Cart if it exists and payment method is COD
+    // For MoMo, the cart is cleared only upon successful payment webhook
+    if (paymentMethod === 'COD') {
+      const cart = await tx.cart.findUnique({ where: { userId } });
+      if (cart) {
+        await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+      }
     }
 
     return newOrder;

@@ -27,14 +27,7 @@ const orderService = {
    * Get single order by ID
    */
   getOrderById: async (id) => {
-    // Try user endpoint first, if fails (404/403), might be admin endpoint
-    // But typically we should know context. For now, let's use the generic endpoint
-    // Backend has: /users/me/orders/:id and /admin/orders/:id
-    // But `getOrderById` in backend `order.service.js` is shared.
-    // Let's assume we use /me/orders/:id for customers.
-    // If admin, we might need a different service method or check param.
-    // For simplicity, let's try the user endpoint.
-    const response = await axiosClient.get(`/me/orders/${id}`);
+    const response = await axiosClient.get(`/orders/${id}`);
     return response.data;
   },
 
@@ -50,7 +43,7 @@ const orderService = {
    * Cancel an order
    */
   cancelOrder: async (id, reason) => {
-    const response = await axiosClient.patch(`/me/orders/${id}/cancel`, { reason });
+    const response = await axiosClient.patch(`/orders/${id}/cancel`, { reason });
     return response.data;
   },
 
@@ -58,7 +51,7 @@ const orderService = {
    * Get user's order history
    */
   getMyOrders: async (params = {}) => {
-    const response = await axiosClient.get('/me/orders', { params });
+    const response = await axiosClient.get('/orders', { params });
     return response.data;
   },
 

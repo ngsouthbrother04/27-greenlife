@@ -146,6 +146,16 @@ export const handleMoMoCallback = async (data) => {
         include: { items: true }
       });
 
+      // 2.5 Clear user's backend cart
+      const cart = await tx.cart.findUnique({
+        where: { userId: order.userId }
+      });
+      if (cart) {
+        await tx.cartItem.deleteMany({
+          where: { cartId: cart.id }
+        });
+      }
+
       // 3. Deduct Stock and Release Reservation
       for (const item of order.items) {
         await tx.product.update({

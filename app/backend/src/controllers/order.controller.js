@@ -1,10 +1,11 @@
 import * as orderService from '../services/order.service.js';
+import * as momoService from '../services/momo.service.js';
 import { StatusCodes } from 'http-status-codes';
 
 export const createOrder = async (req, res, next) => {
   try {
     const userId = req.user.sub;
-    const { fullName, phone, email, address, shippingAddress, note, items, totalAmount } = req.body;
+    const { fullName, phone, email, address, shippingAddress, note, items, totalAmount, paymentMethod } = req.body;
 
     const finalShippingAddress = shippingAddress || {
       fullName,
@@ -13,12 +14,19 @@ export const createOrder = async (req, res, next) => {
       address
     };
 
-    const order = await orderService.createOrder(userId, finalShippingAddress, note, items, totalAmount);
+    const order = await orderService.createOrder(userId, finalShippingAddress, note, items, totalAmount, paymentMethod);
+
+    let paymentUrl = null;
+    if (paymentMethod && paymentMethod.toLowerCase() === 'momo') {
+      const momoResult = await momoService.createMoMoPayment(order.id, userId);
+      paymentUrl = momoResult.payUrl;
+    }
 
     res.status(StatusCodes.CREATED).json({
       status: 'success',
       message: 'Order created successfully',
-      data: { order }
+      data: { order },
+      paymentUrl
     });
   } catch (error) {
     next(error);
