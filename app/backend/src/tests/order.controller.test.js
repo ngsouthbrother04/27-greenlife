@@ -11,7 +11,7 @@ describe('Order Controller', () => {
   let req, res, next;
 
   beforeEach(() => {
-    req = { user: { sub: 1 }, body: {}, query: {}, params: {} };
+    req = { params: {}, body: {}, query: {}, user: { sub: 1 } };
     res = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn()
@@ -21,26 +21,15 @@ describe('Order Controller', () => {
   });
 
   describe('createOrder', () => {
-    it('should create COD order successfully without MoMo integration', async () => {
-      const mockRequestBody = {
-        fullName: 'Test User',
-        phone: '123456789',
-        email: 'test@example.com',
-        address: '123 Street',
-        items: [{ productId: 1, quantity: 2, price: 100 }],
-        totalAmount: 200,
-        paymentMethod: 'COD'
-      };
-      req.body = mockRequestBody;
-
-      const mockOrder = { id: 100, ...mockRequestBody };
+    it('should create an order without momo', async () => {
+      req.body = { shippingAddress: '123 Test St', note: 'Test' };
+      const mockOrder = { id: 10 };
       orderService.createOrder.mockResolvedValue(mockOrder);
 
       await orderController.createOrder(req, res, next);
 
-      expect(orderService.createOrder).toHaveBeenCalled();
+      expect(orderService.createOrder).toHaveBeenCalledWith(1, '123 Test St', 'Test', undefined, undefined, undefined);
       expect(momoService.createMoMoPayment).not.toHaveBeenCalled();
-
       expect(res.status).toHaveBeenCalledWith(StatusCodes.CREATED);
       expect(res.json).toHaveBeenCalledWith({
         status: 'success',
@@ -50,34 +39,37 @@ describe('Order Controller', () => {
       });
     });
 
-    it('should create order and call MoMo service if method is MOMO', async () => {
-      const mockRequestBody = {
-        fullName: 'Test User',
-        items: [{ productId: 1, quantity: 1, price: 50 }],
-        totalAmount: 50,
-        paymentMethod: 'momo'
-      };
-      req.body = mockRequestBody;
-
-      const mockOrder = { id: 101, total: 50 };
+    it('should create an order with momo payment method', async () => {
+      req.body = { paymentMethod: 'MOMO' };
+      const mockOrder = { id: 10 };
       orderService.createOrder.mockResolvedValue(mockOrder);
-      momoService.createMoMoPayment.mockResolvedValue({ payUrl: 'https://momo.com/pay' });
+      momoService.createMoMoPayment.mockResolvedValue({ payUrl: 'http://momo.vn/pay' });
 
       await orderController.createOrder(req, res, next);
 
-      expect(momoService.createMoMoPayment).toHaveBeenCalledWith(101, 1);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        paymentUrl: 'https://momo.com/pay'
-      }));
+      expect(orderService.createOrder).toHaveBeenCalledWith(1, expect.any(Object), undefined, undefined, undefined, 'MOMO');
+      expect(momoService.createMoMoPayment).toHaveBeenCalledWith(10, 1);
+      expect(res.status).toHaveBeenCalledWith(StatusCodes.CREATED);
+      expect(res.json).toHaveBeenCalledWith({
+        status: 'success',
+        message: 'Order created successfully',
+        data: { order: mockOrder },
+        paymentUrl: 'http://momo.vn/pay'
+      });
+    });
+
+    it('should call next on error', async () => {
+      const error = new Error('DB error');
+      orderService.createOrder.mockRejectedValue(error);
+
+      await orderController.createOrder(req, res, next);
+      expect(next).toHaveBeenCalledWith(error);
     });
   });
 
   describe('getMyOrders', () => {
-    it('should fetch user orders', async () => {
-      const mockResult = {
-        orders: [{ id: 1 }],
-        pagination: { page: 1, total: 1 }
-      };
+    it('should return user orders', async () => {
+      const mockResult = { orders: [{ id: 1 }], pagination: {} };
       orderService.getUserOrders.mockResolvedValue(mockResult);
 
       await orderController.getMyOrders(req, res, next);
@@ -88,6 +80,65 @@ describe('Order Controller', () => {
         status: 'success',
         ...mockResult
       });
+    });
+
+    it('should call next on error', async () => {
+      const error = new Error('DB error');
+      orderService.getUserOrders.mockRejectedValue(error);
+
+      await orderController.getMyOrders(req, res, next);
+      expect(next).toHaveBeenCalledWith(error);
+    });
+  });
+
+  describe('getOrder', () => {
+    it('should return a user order by id', async () => {
+      req.params.id = '10';
+      const mockOrder = { id: 10 };
+      orderService.getOrderById.mockResolvedValue(mockOrder);
+
+      await orderController.getOrder(req, res, next);
+
+      expect(orderService.getOrderById).toHaveBeenCalledWith(1, '10');
+      expect(res.status).toHaveBeenCalledWith(StatusCodes.OK);
+      expect(res.json).toHaveBeenCalledWith({
+        status: 'success',
+        data: { order: mockOrder }
+      });
+    });
+
+    it('should call next on error', async () => {
+      const error = new Error('DB error');
+      orderService.getOrderById.mockRejectedValue(error);
+
+      await orderController.getOrder(req, res, next);
+      expect(next).toHaveBeenCalledWith(error);
+    });
+  });
+
+  describe('cancelOrder', () => {
+    it('should cancel a user order', async () => {
+      req.params.id = '10';
+      const mockOrder = { id: 10, status: 'CANCELLED' };
+      orderService.cancelOrder.mockResolvedValue(mockOrder);
+
+      await orderController.cancelOrder(req, res, next);
+
+      expect(orderService.cancelOrder).toHaveBeenCalledWith(1, '10');
+      expect(res.status).toHaveBeenCalledWith(StatusCodes.OK);
+      expect(res.json).toHaveBeenCalledWith({
+        status: 'success',
+        message: 'Order cancelled successfully',
+        data: { order: mockOrder }
+      });
+    });
+
+    it('should call next on error', async () => {
+      const error = new Error('DB error');
+      orderService.cancelOrder.mockRejectedValue(error);
+
+      await orderController.cancelOrder(req, res, next);
+      expect(next).toHaveBeenCalledWith(error);
     });
   });
 });
