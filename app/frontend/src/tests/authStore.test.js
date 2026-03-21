@@ -1,88 +1,85 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import useAuthStore from '../stores/authStore.js';
-import * as authApi from '../api/index.js';
-import useCartStore from '../stores/cartStore.js';
+import { create } from 'zustand';
 
-vi.mock('../api/authApi.js');
-vi.mock('../stores/cartStore.js', () => ({
-  default: {
-    getState: vi.fn(() => ({
-      syncWithBackend: vi.fn(),
-      clearCart: vi.fn(),
-    })),
-  },
+// 1. Mock persist middleware as requested
+vi.mock('zustand/middleware', () => ({
+  persist: (config) => config,
 }));
 
+// Mock cartStore and axiosClient dynamically
+vi.mock('@/api/axiosClient', () => ({
+  default: { defaults: { headers: { common: {} } } }
+}));
+
+const mockSyncWithBackend = vi.fn();
+const mockClearCart = vi.fn();
+
+vi.mock('../stores/cartStore.js', () => ({
+  default: {
+    getState: () => ({
+      syncWithBackend: mockSyncWithBackend,
+      clearCart: mockClearCart
+    })
+  }
+}));
+
+import useAuthStore from '../stores/authStore.js';
+import axiosClient from '@/api/axiosClient';
 
 describe('authStore', () => {
   beforeEach(() => {
-    // Reset Zustand store state before each test
-    useAuthStore.setState({
-      user: null,
-      token: null,
-      isLoading: false,
-      error: null,
-    });
-    localStorage.clear();
+    useAuthStore.setState({ user: null, token: null, isLoading: false });
     vi.clearAllMocks();
   });
 
-  it('should initialize with default values', () => {
+  it('should return correct authentication status', () => {
+    expect(useAuthStore.getState().isAuthenticated()).toBe(false);
+    useAuthStore.setState({ user: { id: 1 }, token: 'abc' });
+    expect(useAuthStore.getState().isAuthenticated()).toBe(true);
+  });
+
+  it('should set user and trigger cart sync', async () => {
+    const user = { id: 1, name: 'John' };
+    useAuthStore.getState().setUser(user, 'token123');
+    
     const state = useAuthStore.getState();
-    expect(state.user).toBeNull();
-    expect(state.token).toBeNull();
-    expect(state.isAuthenticated()).toBe(false);
+    expect(state.user).toEqual(user);
+    expect(state.token).toBe('token123');
     expect(state.isLoading).toBe(false);
-    expect(state.error).toBeNull();
+    expect(axiosClient.defaults.headers.common['Authorization']).toBe('Bearer token123');
+
+    // Wait for async import
+    await new Promise(r => setTimeout(r, 10));
+    expect(mockSyncWithBackend).toHaveBeenCalled();
   });
 
-  describe('setUser', () => {
-    it('should set user data, token and trigger synchronization', async () => {
-      const mockUser = { id: 1, name: 'Test User' };
-      const mockToken = 'mock_jwt_token';
-
-      const syncWithBackendMock = vi.fn();
-      useCartStore.getState.mockReturnValue({ syncWithBackend: syncWithBackendMock, clearCart: vi.fn() });
-
-      // Call setUser
-      useAuthStore.getState().setUser(mockUser, mockToken);
-
-      const state = useAuthStore.getState();
-      expect(state.user).toEqual(mockUser);
-      expect(state.token).toBe(mockToken);
-      expect(state.isLoading).toBe(false);
-      expect(state.isAuthenticated()).toBe(true);
-
-      // Wait a bit for the async import('./cartStore') to complete inside setUser
-      await new Promise(resolve => setTimeout(resolve, 10));
-
-      expect(syncWithBackendMock).toHaveBeenCalled();
-    });
+  it('should update user', () => {
+    useAuthStore.setState({ user: { id: 1, name: 'John' } });
+    useAuthStore.getState().updateUser({ name: 'Jane' });
+    expect(useAuthStore.getState().user.name).toBe('Jane');
   });
 
-  describe('logout', () => {
-    it('should clear state, local storage and cart on logout', async () => {
-      // Set initial state
-      useAuthStore.setState({
-        user: { id: 1, name: 'Test' },
-        token: 'token123',
-        isLoading: false
-      });
+  it('should set loading', () => {
+    useAuthStore.getState().setLoading(true);
+    expect(useAuthStore.getState().isLoading).toBe(true);
+  });
 
-      const clearCartMock = vi.fn();
-      useCartStore.getState.mockReturnValue({ clearCart: clearCartMock, syncWithBackend: vi.fn() });
+  it('should logout and clear cart', async () => {
+    useAuthStore.setState({ user: { id: 1 }, token: 'abc' });
+    axiosClient.defaults.headers.common['Authorization'] = 'Bearer abc';
+    
+    useAuthStore.getState().logout();
+    expect(useAuthStore.getState().user).toBeNull();
+    expect(useAuthStore.getState().token).toBeNull();
+    expect(axiosClient.defaults.headers.common['Authorization']).toBeUndefined();
 
-      useAuthStore.getState().logout();
+    // Wait for async import
+    await new Promise(r => setTimeout(r, 10));
+    expect(mockClearCart).toHaveBeenCalled();
+  });
 
-      const state = useAuthStore.getState();
-      expect(state.user).toBeNull();
-      expect(state.token).toBeNull();
-      expect(state.isAuthenticated()).toBe(false);
-
-      // Wait for async import
-      await new Promise(resolve => setTimeout(resolve, 10));
-
-      expect(clearCartMock).toHaveBeenCalled();
-    });
+  it('should get token', () => {
+    useAuthStore.setState({ token: 'xyz' });
+    expect(useAuthStore.getState().getToken()).toBe('xyz');
   });
 });

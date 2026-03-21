@@ -74,7 +74,6 @@ describe('LoginPage Component', () => {
     });
   });
 
-  /*
   it('handles successful login and navigation', async () => {
     const mockResponse = {
       data: {
@@ -97,10 +96,9 @@ describe('LoginPage Component', () => {
       expect(mockLogin).toHaveBeenCalledWith({
         email: 'test@example.com',
         password: '123456'
-      });
+      }, expect.anything());
       expect(mockSetUser).toHaveBeenCalledWith(mockResponse.data.user, mockResponse.data.accessToken);
       expect(mockNavigate).toHaveBeenCalled();
     });
   });
-  */
 });
