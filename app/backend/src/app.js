@@ -29,6 +29,13 @@ app.get('/', (req, res) => {
   res.json({ message: 'Welcome to GreenLife Store API' });
 });
 
+// MoMo redirect landing page
+app.get('/return-url', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  const frontendUrl = `http://localhost:5173/return-url${query ? `?${query}` : ''}`;
+  res.redirect(frontendUrl);
+});
+
 // Handle 404 Not Found
 app.use((req, res, next) => {
   next(new ApiError(StatusCodes.NOT_FOUND, 'Not Found'));

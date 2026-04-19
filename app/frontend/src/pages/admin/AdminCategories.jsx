@@ -24,6 +24,7 @@ const AdminCategories = () => {
   const [editingCategory, setEditingCategory] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState(null);
+  const [targetCategoryId, setTargetCategoryId] = useState('');
 
   // Data Fetching
   const { data: categories = [], isLoading } = useQuery({
@@ -58,6 +59,33 @@ const AdminCategories = () => {
       setCategoryToDelete(null);
       toast.success('Xóa danh mục thành công');
     },
+    onError: (error) => {
+      toast.error(error?.response?.data?.message || 'Xóa danh mục thất bại');
+    },
+  });
+
+  const reassignMutation = useMutation({
+    mutationFn: ({ id, toCategoryId }) => categoryService.reassignProducts(id, toCategoryId),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries(['categories']);
+      const movedCount = response?.data?.movedCount || 0;
+
+      setCategoryToDelete((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          _count: {
+            ...(prev._count || {}),
+            products: 0
+          }
+        };
+      });
+      setTargetCategoryId('');
+      toast.success(`Đã chuyển ${movedCount} sản phẩm sang danh mục mới`);
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.message || 'Chuyển sản phẩm thất bại');
+    }
   });
 
   // Form Setup
@@ -116,6 +144,7 @@ const AdminCategories = () => {
 
   const handleDeleteClick = (category) => {
     setCategoryToDelete(category);
+    setTargetCategoryId('');
     setIsDeleteModalOpen(true);
   };
 
@@ -124,6 +153,15 @@ const AdminCategories = () => {
       deleteMutation.mutate(categoryToDelete.id);
     }
   };
+
+  const handleReassignProducts = () => {
+    if (!categoryToDelete || !targetCategoryId) return;
+    reassignMutation.mutate({ id: categoryToDelete.id, toCategoryId: Number(targetCategoryId) });
+  };
+
+  const availableTargetCategories = (Array.isArray(categories) ? categories : []).filter(
+    (cat) => cat.id !== categoryToDelete?.id
+  );
 
   // Convert name to slug automatically if creating
   const handleNameChange = (e) => {
@@ -184,6 +222,7 @@ const AdminCategories = () => {
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-secondary-custom uppercase tracking-wider">Tên danh mục</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-secondary-custom uppercase tracking-wider">Slug</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-secondary-custom uppercase tracking-wider">Số sản phẩm</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-secondary-custom uppercase tracking-wider">Mô tả</th>
                   <th className="px-6 py-4 text-right text-xs font-semibold text-secondary-custom uppercase tracking-wider">Thao tác</th>
                 </tr>
@@ -191,7 +230,7 @@ const AdminCategories = () => {
               <tbody className="divide-y divide-divider">
                 {filteredCategories.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="px-6 py-8 text-center text-secondary-custom">
+                    <td colSpan="5" className="px-6 py-8 text-center text-secondary-custom">
                       Không tìm thấy danh mục nào
                     </td>
                   </tr>
@@ -208,6 +247,15 @@ const AdminCategories = () => {
                       </td>
                       <td className="px-6 py-4 text-sm text-secondary-custom font-mono">
                         {cat.slug}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-secondary-custom">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                          Number(cat?._count?.products || 0) > 0
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-green-100 text-green-700'
+                        }`}>
+                          {cat?._count?.products || 0}
+                        </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-secondary-custom max-w-xs truncate">
                         {cat.description || '-'}
@@ -319,10 +367,46 @@ const AdminCategories = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6">
             <h3 className="heading-3 text-red-500 mb-4">Xác nhận xóa</h3>
+            {Number(categoryToDelete?._count?.products || 0) > 0 ? (
+              <div className="mb-6 space-y-4">
+                <p className="paragraph-2 text-secondary-custom">
+                  Danh mục <span className="font-semibold text-primary-custom">"{categoryToDelete?.name}"</span> hiện có{' '}
+                  <span className="font-semibold text-red-600">{categoryToDelete?._count?.products}</span> sản phẩm.
+                  Hãy chuyển toàn bộ sản phẩm sang danh mục khác trước khi xóa.
+                </p>
+
+                <div>
+                  <label className="label mb-2 block">Danh mục đích *</label>
+                  <select
+                    className="input-field w-full"
+                    value={targetCategoryId}
+                    onChange={(e) => setTargetCategoryId(e.target.value)}
+                    disabled={reassignMutation.isPending}
+                  >
+                    <option value="">Chọn danh mục cần chuyển tới</option>
+                    {availableTargetCategories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleReassignProducts}
+                  disabled={!targetCategoryId || reassignMutation.isPending}
+                  className="btn-primary w-full flex items-center justify-center gap-2"
+                >
+                  {reassignMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Chuyển toàn bộ sản phẩm
+                </button>
+              </div>
+            ) : (
             <p className="paragraph-2 text-secondary-custom mb-6">
-              Bạn có chắc chắn muốn xóa danh mục <span className="font-semibold text-primary-custom">"{categoryToDelete?.name}"</span>? 
-              Các sản phẩm thuộc danh mục này sẽ hiển thị là "Chưa phân loại".
+              Bạn có chắc chắn muốn xóa danh mục <span className="font-semibold text-primary-custom">"{categoryToDelete?.name}"</span>?
             </p>
+            )}
             <div className="flex items-center justify-end gap-3">
               <button 
                 onClick={() => setIsDeleteModalOpen(false)}
@@ -332,7 +416,11 @@ const AdminCategories = () => {
               </button>
               <button 
                 onClick={handleConfirmDelete}
-                disabled={deleteMutation.isPending}
+                disabled={
+                  deleteMutation.isPending ||
+                  reassignMutation.isPending ||
+                  Number(categoryToDelete?._count?.products || 0) > 0
+                }
                 className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
               >
                 {deleteMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}

@@ -26,6 +26,7 @@ const Checkout = () => {
   const { items, getTotalPrice, clearCart } = useCartStore();
   const { user } = useAuthStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isLocalDev = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 
   // Form Setup
   const {
@@ -63,18 +64,25 @@ const Checkout = () => {
       const response = await orderService.createOrder(orderData);
       
       console.log('Order created:', response);
+      const orderId = response?.data?.order?.id;
       
       // Handle Payment Redirect or Success
-      if (data.paymentMethod === 'momo' && response.paymentUrl) {
-        // Mock redirect for MoMo - do NOT clear cart yet
-        window.location.href = response.paymentUrl;
+      if (data.paymentMethod === 'momo' && response.paymentUrl && orderId) {
+        // Local dev flow: stay in FE and allow simulate or open MoMo manually from order detail.
+        if (isLocalDev) {
+          sessionStorage.setItem(`momo-pay-url-${orderId}`, response.paymentUrl);
+          toast.success('Đơn MoMo đã tạo. Bạn có thể giả lập thanh toán ngay trong trang chi tiết đơn hàng.');
+          navigate(`/profile/orders/${orderId}`);
+        } else {
+          window.location.href = response.paymentUrl;
+        }
       } else {
         // COD logic: Clear cart, show success, redirect to order details
         clearCart();
         toast.success('Đặt hàng thành công! (Thanh toán khi nhận hàng)');
         // Try to navigate to order details if we have the ID, otherwise fallback to orders list
-        if (response.data?.order?.id) {
-          navigate(`/profile/orders/${response.data.order.id}`);
+        if (orderId) {
+          navigate(`/profile/orders/${orderId}`);
         } else {
           navigate('/profile?tab=orders'); // Fallback
         }

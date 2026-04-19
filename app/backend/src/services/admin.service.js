@@ -16,7 +16,7 @@ export const getDashboardStats = async (range = '30d') => {
     startDate.setMonth(startDate.getMonth() - 11); // Last 12 months including current
     startDate.setDate(1); // Start from beginning of the month
   } else if (range === 'quarter') {
-    // We want 4 quarters trailing. 
+    // We want 4 quarters trailing.
     // Start from 12 months ago to gather 4 full quarters
     startDate.setMonth(startDate.getMonth() - 11);
     startDate.setDate(1);
@@ -111,7 +111,7 @@ export const getDashboardStats = async (range = '30d') => {
     }
   }
 
-  // Helper to format map keys correctly 
+  // Helper to format map keys correctly
   const getFormatDate = (dateOb) => {
     if (range === 'year') {
       const m = (dateOb.getMonth() + 1).toString().padStart(2, '0');
@@ -203,6 +203,69 @@ export const getAllOrders = async (query) => {
       totalPages: Math.ceil(total / Number(limit))
     }
   };
+};
+
+/**
+ * Get All Products (Admin)
+ */
+export const getAllProducts = async (query) => {
+  const { page = 1, limit = 20, search, status = 'ALL' } = query;
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const where = {};
+
+  if (search) {
+    where.name = {
+      contains: search,
+      mode: 'insensitive'
+    };
+  }
+
+  if (status && status !== 'ALL' && ['ACTIVE', 'INACTIVE'].includes(status)) {
+    where.status = status;
+  }
+
+  const [products, total] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      skip,
+      take: Number(limit),
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      include: {
+        category: true
+      }
+    }),
+    prisma.product.count({ where })
+  ]);
+
+  return {
+    products,
+    pagination: {
+      page: Number(page),
+      limit: Number(limit),
+      total,
+      totalPages: Math.ceil(total / Number(limit))
+    }
+  };
+};
+
+/**
+ * Update Product Status (Admin)
+ */
+export const updateProductStatus = async (id, status) => {
+  if (!['ACTIVE', 'INACTIVE'].includes(status)) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid product status');
+  }
+
+  const product = await prisma.product.findUnique({ where: { id: Number(id) } });
+  if (!product) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Product not found');
+  }
+
+  return prisma.product.update({
+    where: { id: Number(id) },
+    data: { status }
+  });
 };
 
 /**
@@ -318,7 +381,7 @@ export const deleteOrder = async (id) => {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Order not found');
   }
 
-  // Use a transaction to ensure all related data is deleted 
+  // Use a transaction to ensure all related data is deleted
   // because schema.prisma does not have onDelete: Cascade set up
   await prisma.$transaction(async (tx) => {
     // 1. Delete associated OrderItems

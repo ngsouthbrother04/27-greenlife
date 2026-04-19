@@ -38,6 +38,11 @@ const categoryService = {
     return response.data;
   },
 
+  reassignProducts: async (id, targetCategoryId) => {
+    const response = await axiosClient.put(`/categories/${id}/reassign-products`, { targetCategoryId });
+    return response.data;
+  },
+
   /**
    * Delete category (Admin)
    */

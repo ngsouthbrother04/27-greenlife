@@ -30,3 +30,20 @@ export const momoCallback = async (req, res, next) => {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
   }
 };
+
+export const simulateMomoPayment = async (req, res, next) => {
+  try {
+    const userId = req.user.sub;
+    const { orderId, resultCode = 0 } = req.body;
+
+    const result = await momoService.simulateMoMoCallback(orderId, userId, resultCode);
+
+    res.status(StatusCodes.OK).json({
+      status: 'success',
+      message: 'MoMo payment simulated successfully',
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+};

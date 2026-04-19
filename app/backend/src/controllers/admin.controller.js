@@ -28,6 +28,20 @@ export const getAllOrders = async (req, res, next) => {
   }
 };
 
+export const getAllProducts = async (req, res, next) => {
+  try {
+    const { products, pagination } = await adminService.getAllProducts(req.query);
+    res.status(StatusCodes.OK).json({
+      status: 'success',
+      results: products.length,
+      data: { products },
+      pagination
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const updateOrderStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -64,6 +78,22 @@ export const deleteOrder = async (req, res, next) => {
     res.status(StatusCodes.OK).json({
       status: 'success',
       message: 'Order deleted successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateProductStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const product = await adminService.updateProductStatus(id, status);
+    res.status(StatusCodes.OK).json({
+      status: 'success',
+      message: 'Product status updated',
+      data: { product }
     });
   } catch (error) {
     next(error);

@@ -93,7 +93,7 @@ const fallbackProducts = [
  * - Quick add to cart from product cards
  */
 const ProductListPage = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   // Parse query params to object
@@ -104,7 +104,7 @@ const ProductListPage = () => {
     maxPrice: searchParams.get('maxPrice') || undefined,
     inStock: searchParams.get('inStock') || undefined,
     sort: searchParams.get('sort') || undefined,
-    page: searchParams.get('page') || 1,
+    page: Number(searchParams.get('page')) || 1, // ensure this is a number
   };
 
   // Fetch products from API using React Query
@@ -258,6 +258,7 @@ const ProductListPage = () => {
                         const newParams = new URLSearchParams(searchParams);
                         newParams.set('page', page);
                         setSearchParams(newParams);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                     className={`w-10 h-10 rounded-lg font-medium transition-colors ${
                       (parseInt(searchParams.get('page')) || 1) === page 

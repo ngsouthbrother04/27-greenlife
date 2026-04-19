@@ -7,3 +7,7 @@ npm-debug.log
 .agent
 prompts
 GEMINI.md
+.idea
+.vscode
+*.log
+*.tsbuildinfo

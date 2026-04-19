@@ -20,6 +20,17 @@ const paymentService = {
   },
 
   /**
+   * Simulate MoMo callback from FE (development helper)
+   */
+  simulateMomoPayment: async ({ orderId, resultCode = 0 }) => {
+    const response = await axiosClient.post('/payments/momo/simulate', {
+      orderId: Number(orderId),
+      resultCode: Number(resultCode)
+    });
+    return response.data;
+  },
+
+  /**
    * Get payment methods (optional)
    */
   getPaymentMethods: async () => {

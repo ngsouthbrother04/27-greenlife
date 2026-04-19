@@ -62,3 +62,19 @@ export const deleteCategory = async (req, res, next) => {
     next(error);
   }
 };
+
+export const reassignProducts = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { targetCategoryId } = req.body;
+
+    const result = await categoryService.reassignCategoryProducts(id, targetCategoryId);
+    res.status(StatusCodes.OK).json({
+      status: 'success',
+      message: 'Đã chuyển sản phẩm sang danh mục mới',
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+};

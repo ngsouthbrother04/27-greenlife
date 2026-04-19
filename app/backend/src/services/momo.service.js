@@ -201,3 +201,76 @@ export const handleMoMoCallback = async (data) => {
 
   return { message: 'Callback received' };
 };
+
+/**
+ * Simulate MoMo callback for local/testing from FE
+ */
+export const simulateMoMoCallback = async (orderId, userId, resultCode = 0) => {
+  const normalizedOrderId = Number(orderId);
+  const normalizedResultCode = Number(resultCode);
+
+  const order = await prisma.order.findUnique({
+    where: { id: normalizedOrderId },
+    include: { payment: true }
+  });
+
+  if (!order) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Order not found');
+  }
+
+  if (order.userId !== userId) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'Unauthorized');
+  }
+
+  if (order.payment?.method !== 'MOMO') {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Order is not using MoMo payment');
+  }
+
+  if (order.payment?.status !== 'PENDING') {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Payment is not in PENDING status');
+  }
+
+  if (![0, 1006].includes(normalizedResultCode)) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Unsupported resultCode for simulation');
+  }
+
+  const requestId = `${normalizedOrderId}-${Date.now()}`;
+  const orderIdMomo = requestId;
+  const amount = Number(order.total).toString();
+  const orderInfo = `Pay for Order #${normalizedOrderId}`;
+  const orderType = 'momo_wallet';
+  const transId = Math.floor(Math.random() * 10000000000);
+  const message = normalizedResultCode === 0 ? 'Successful.' : 'Payment failed.';
+  const payType = 'qr';
+  const responseTime = Date.now();
+  const extraData = '';
+
+  const rawSignature = `accessKey=${ACCESS_KEY}&amount=${amount}&extraData=${extraData}&message=${message}&orderId=${orderIdMomo}&orderInfo=${orderInfo}&orderType=${orderType}&partnerCode=${PARTNER_CODE}&payType=${payType}&requestId=${requestId}&responseTime=${responseTime}&resultCode=${normalizedResultCode}&transId=${transId}`;
+
+  const signature = crypto
+    .createHmac('sha256', SECRET_KEY)
+    .update(rawSignature)
+    .digest('hex');
+
+  await handleMoMoCallback({
+    partnerCode: PARTNER_CODE,
+    orderId: orderIdMomo,
+    requestId,
+    amount,
+    orderInfo,
+    orderType,
+    transId,
+    resultCode: normalizedResultCode,
+    message,
+    payType,
+    responseTime,
+    extraData,
+    signature
+  });
+
+  return {
+    orderId: normalizedOrderId,
+    resultCode: normalizedResultCode,
+    message
+  };
+};

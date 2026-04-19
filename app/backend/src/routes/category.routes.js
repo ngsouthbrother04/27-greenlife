@@ -11,6 +11,7 @@ router.get('/:slug', categoryController.getCategory);
 // Admin
 router.post('/', verifyToken, authorize(['ADMIN']), categoryController.createCategory);
 router.put('/:id', verifyToken, authorize(['ADMIN']), categoryController.updateCategory);
+router.put('/:id/reassign-products', verifyToken, authorize(['ADMIN']), categoryController.reassignProducts);
 router.delete('/:id', verifyToken, authorize(['ADMIN']), categoryController.deleteCategory);
 
 export default router;

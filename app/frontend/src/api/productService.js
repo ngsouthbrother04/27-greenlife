@@ -15,7 +15,7 @@ const productService = {
     // Frontend params might need mapping if keys differ
     const queryParams = {
       page: params.page || 1,
-      limit: params.limit || 12,
+      limit: params.limit || 6,
       search: params.search,
       categoryId: params.category, // Assuming frontend passes category ID or slug. Backend uses IDs.
       minPrice: params.minPrice,
@@ -27,7 +27,11 @@ const productService = {
     Object.keys(queryParams).forEach(key => queryParams[key] === undefined && delete queryParams[key]);
 
     const response = await axiosClient.get('/products', { params: queryParams });
-    return response.data.data; // { products, total, totalPages }
+    return {
+      ...response.data.data,
+      pagination: response.data.pagination,
+      total: response.data.pagination?.total
+    };
   },
 
   /**
@@ -78,6 +82,15 @@ const productService = {
 
   // --- Admin CRUD Operations ---
 
+  getAdminProducts: async (params = {}) => {
+    const response = await axiosClient.get('/admin/products', { params });
+    return {
+      ...response.data.data,
+      pagination: response.data.pagination,
+      total: response.data.pagination?.total
+    };
+  },
+
   createProduct: async (productData) => {
     const response = await axiosClient.post('/products', productData);
     return response.data;
@@ -90,6 +103,11 @@ const productService = {
 
   deleteProduct: async (id) => {
     const response = await axiosClient.delete(`/products/${id}`);
+    return response.data;
+  },
+
+  updateProductStatus: async (id, status) => {
+    const response = await axiosClient.put(`/admin/products/${id}/status`, { status });
     return response.data;
   },
 

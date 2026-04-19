@@ -6,6 +6,7 @@ const router = express.Router();
 
 // Create Payment requires Auth
 router.post('/momo/create', verifyToken, paymentController.createPayment);
+router.post('/momo/simulate', verifyToken, paymentController.simulateMomoPayment);
 
 // Callback must be PUBLIC (no auth middleware)
 router.post('/momo/callback', paymentController.momoCallback);

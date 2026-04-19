@@ -17,4 +17,8 @@ router.get('/orders/:id', adminController.getOrder);
 router.put('/orders/:id/status', adminController.updateOrderStatus);
 router.delete('/orders/:id', adminController.deleteOrder);
 
+// Product Management
+router.get('/products', adminController.getAllProducts);
+router.put('/products/:id/status', adminController.updateProductStatus);
+
 export default router;

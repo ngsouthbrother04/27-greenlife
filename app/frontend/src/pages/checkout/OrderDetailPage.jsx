@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Clock, MapPin, CreditCard, ExternalLink, Package, ShieldCheck, FileText, XCircle } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { ArrowLeft, Clock, MapPin, CreditCard, ExternalLink, Package, ShieldCheck, FileText, XCircle, CheckCircle2 } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import orderService from '@/api/orderService';
+import paymentService from '@/api/paymentService';
+import { useCartStore } from '@/stores';
 import toast from 'react-hot-toast';
 
 const OrderDetailPage = () => {
   const { id } = useParams();
+  const queryClient = useQueryClient();
+  const clearCart = useCartStore((state) => state.clearCart);
 
   // Fetch Order Details
   const { data, isLoading, isError, error } = useQuery({
@@ -16,6 +20,28 @@ const OrderDetailPage = () => {
   });
 
   const order = data?.data?.order;
+  const momoPayUrl = order ? sessionStorage.getItem(`momo-pay-url-${order.id}`) : null;
+
+  const simulateMomoMutation = useMutation({
+    mutationFn: ({ resultCode }) => paymentService.simulateMomoPayment({ orderId: id, resultCode }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries(['orderDetail', id]);
+      queryClient.invalidateQueries(['myOrders']);
+
+      if (Number(variables.resultCode) === 0) {
+        clearCart();
+        if (order?.id) {
+          sessionStorage.removeItem(`momo-pay-url-${order.id}`);
+        }
+        toast.success('Đã giả lập thanh toán MoMo thành công');
+      } else {
+        toast.success('Đã giả lập thanh toán MoMo thất bại');
+      }
+    },
+    onError: (err) => {
+      toast.error(err?.response?.data?.message || 'Giả lập thanh toán thất bại');
+    }
+  });
 
   if (isLoading) {
     return (
@@ -201,6 +227,43 @@ const OrderDetailPage = () => {
                         {order.payment?.status === 'SUCCESS' ? 'Đã thu tiền' : (order.payment?.status === 'FAILED' ? 'Thất bại' : 'Chờ thu tiền')}
                       </strong>
                     </p>
+
+                    {order.payment?.method === 'MOMO' && order.payment?.status === 'PENDING' && (
+                      <div className="mt-4 space-y-2">
+                        {momoPayUrl && (
+                          <a
+                            href={momoPayUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="w-full px-3 py-2 rounded-lg border border-pink-200 bg-pink-50 text-pink-700 text-sm font-medium transition-colors hover:bg-pink-100 flex items-center justify-center gap-2"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                            Mở trang thanh toán MoMo
+                          </a>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => simulateMomoMutation.mutate({ resultCode: 0 })}
+                          disabled={simulateMomoMutation.isPending}
+                          className="w-full px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          {simulateMomoMutation.isPending ? (
+                            <Clock className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="w-4 h-4" />
+                          )}
+                          Giả lập thanh toán thành công
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => simulateMomoMutation.mutate({ resultCode: 1006 })}
+                          disabled={simulateMomoMutation.isPending}
+                          className="w-full px-3 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          Giả lập thanh toán thất bại
+                        </button>
+                      </div>
+                    )}
                  </div>
               </div>
             </div>

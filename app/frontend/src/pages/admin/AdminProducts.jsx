@@ -26,6 +26,7 @@ const AdminProducts = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
   const queryClient = useQueryClient();
 
@@ -34,8 +35,8 @@ const AdminProducts = () => {
   });
 
   const { data: productsData, isLoading } = useQuery({
-    queryKey: ['products'],
-    queryFn: () => productService.getProducts({ limit: 1000 }),
+    queryKey: ['admin-products', statusFilter],
+    queryFn: () => productService.getAdminProducts({ limit: 1000, status: statusFilter }),
   });
 
   const { data: categories = [] } = useQuery({
@@ -48,6 +49,7 @@ const AdminProducts = () => {
   const { mutate: createProduct, isLoading: isCreating } = useMutation({
     mutationFn: productService.createProduct,
     onSuccess: () => {
+      queryClient.invalidateQueries(['admin-products']);
       queryClient.invalidateQueries(['products']);
       toast.success('Thêm sản phẩm thành công');
       handleCloseModal();
@@ -58,6 +60,7 @@ const AdminProducts = () => {
   const { mutate: updateProduct, isLoading: isUpdating } = useMutation({
     mutationFn: ({ id, data }) => productService.updateProduct(id, data),
     onSuccess: () => {
+      queryClient.invalidateQueries(['admin-products']);
       queryClient.invalidateQueries(['products']);
       toast.success('Cập nhật sản phẩm thành công');
       handleCloseModal();
@@ -65,14 +68,29 @@ const AdminProducts = () => {
     onError: (error) => toast.error('Cập nhật thất bại'),
   });
 
+  const { mutate: updateProductStatus, isLoading: isUpdatingStatus } = useMutation({
+    mutationFn: ({ id, status }) => productService.updateProductStatus(id, status),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries(['admin-products']);
+      queryClient.invalidateQueries(['products']);
+      toast.success(
+        variables.status === 'INACTIVE'
+          ? 'Đã chuyển sản phẩm sang tạm ngưng bán'
+          : 'Đã chuyển sản phẩm sang đang bán'
+      );
+    },
+    onError: () => toast.error('Cập nhật trạng thái thất bại'),
+  });
+
   const { mutate: deleteProduct, isLoading: isDeleting } = useMutation({
     mutationFn: productService.deleteProduct,
     onSuccess: () => {
+      queryClient.invalidateQueries(['admin-products']);
       queryClient.invalidateQueries(['products']);
       toast.success('Xóa sản phẩm thành công');
       setIsDeleteModalOpen(false);
     },
-    onError: () => toast.error('Xóa thất bại'),
+    onError: (error) => toast.error(error?.response?.data?.message || 'Xóa thất bại'),
   });
 
   const handleCloseModal = () => {
@@ -202,6 +220,11 @@ const AdminProducts = () => {
     }
   };
 
+  const handleToggleProductStatus = (product) => {
+    const nextStatus = product.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    updateProductStatus({ id: product.id, status: nextStatus });
+  };
+
   // ... (render)
 
   return (
@@ -234,6 +257,15 @@ const AdminProducts = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        <select
+          className="px-3 py-2 rounded-lg border border-divider focus:outline-none focus:border-de-primary"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
+          <option value="ALL">Tất cả trạng thái</option>
+          <option value="ACTIVE">Đang bán</option>
+          <option value="INACTIVE">Tạm ngưng bán</option>
+        </select>
       </div>
 
       {/* Table */}
@@ -306,6 +338,18 @@ const AdminProducts = () => {
                             title="Sửa"
                           >
                             <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleToggleProductStatus(product)}
+                            disabled={isUpdatingStatus}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                              product.status === 'ACTIVE'
+                                ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                                : 'bg-green-100 text-green-700 hover:bg-green-200'
+                            } disabled:opacity-60 disabled:cursor-not-allowed`}
+                            title={product.status === 'ACTIVE' ? 'Tạm ngưng bán' : 'Mở bán lại'}
+                          >
+                            {product.status === 'ACTIVE' ? 'Tạm ngưng' : 'Bán lại'}
                           </button>
                           <button 
                             onClick={() => handleDeleteClick(product)}

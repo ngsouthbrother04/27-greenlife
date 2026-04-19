@@ -61,26 +61,26 @@ export const getAllProducts = async (query) => {
   }
 
   // Build OrderBy Clause
-  let orderBy = { createdAt: 'desc' }; // Default: Newest
+  let orderBy = [{ createdAt: 'desc' }, { id: 'desc' }]; // Default: Newest, tie-breaker: id
 
   if (sort) {
     switch (sort) {
       case 'price_asc':
-        orderBy = { price: 'asc' };
+        orderBy = [{ price: 'asc' }, { id: 'asc' }];
         break;
       case 'price_desc':
-        orderBy = { price: 'desc' };
+        orderBy = [{ price: 'desc' }, { id: 'desc' }];
         break;
       case 'name_asc':
-        orderBy = { name: 'asc' };
+        orderBy = [{ name: 'asc' }, { id: 'asc' }];
         break;
       case 'createdAt_desc':
-        orderBy = { createdAt: 'desc' };
+        orderBy = [{ createdAt: 'desc' }, { id: 'desc' }];
         break;
       // 'sold' sorting requires 'sold' field or order aggregation, which is complex.
       // For now, let's assume 'createdAt' desc is fallback.
       default:
-        orderBy = { createdAt: 'desc' };
+        orderBy = [{ createdAt: 'desc' }, { id: 'desc' }];
     }
   }
 
@@ -250,13 +250,32 @@ export const updateProduct = async (id, data) => {
  * Delete Product (Admin)
  */
 export const deleteProduct = async (id) => {
-  const product = await prisma.product.findUnique({ where: { id: Number(id) } });
+  const product = await prisma.product.findUnique({
+    where: { id: Number(id) },
+    include: {
+      _count: {
+        select: {
+          orderItems: true
+        }
+      }
+    }
+  });
   if (!product) throw new ApiError(StatusCodes.NOT_FOUND, 'Product not found');
 
-  // Hard delete or Soft delete? Prompt says "Delete". Let's do hard delete for now, 
-  // or set status to INACTIVE if referred. Safe choice: Status INACTIVE.
-  return await prisma.product.update({
-    where: { id: Number(id) },
-    data: { status: 'INACTIVE' }
+  if (product._count.orderItems > 0) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      'Sản phẩm đã có trong đơn hàng, không thể xóa vĩnh viễn. Vui lòng chuyển sang tạm ngưng bán.'
+    );
+  }
+
+  return await prisma.$transaction(async (tx) => {
+    await tx.cartItem.deleteMany({ where: { productId: Number(id) } });
+    await tx.review.deleteMany({ where: { productId: Number(id) } });
+    await tx.wishlist.deleteMany({ where: { productId: Number(id) } });
+
+    return tx.product.delete({
+      where: { id: Number(id) }
+    });
   });
 };
