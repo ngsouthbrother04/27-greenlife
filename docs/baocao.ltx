@@ -1,0 +1,474 @@
+\documentclass[a4paper,12pt]{article}
+
+\usepackage{vntex}
+\usepackage[english,vietnam]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{setspace}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{longtable}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{titlesec}
+
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  urlcolor=blue,
+  citecolor=black
+}
+\renewcommand{\contentsname}{Nội dung}
+
+\setlength{\headheight}{16pt}
+\setstretch{1.25}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5em}
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{2}
+\renewcommand{\thesection}{}
+\renewcommand{\thesubsection}{\arabic{subsection}}
+\titleformat{\section}[block]{\normalfont\Large\bfseries}{}{0pt}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textbf{Thương mại điện tử \& Ứng dụng}}
+\fancyhead[R]{\small\textbf{GreenLife}}
+\fancyfoot[L]{\small Báo cáo đồ án}
+\fancyfoot[R]{\small Trang \thepage/\pageref{LastPage}}
+
+\renewcommand{\tablename}{Bảng}
+\renewcommand{\figurename}{Hình}
+
+\newcommand{\reporttitle}{Website thương mại điện tử GreenLife}
+\newcommand{\school}{TRƯỜNG ĐẠI HỌC SÀI GÒN}
+\newcommand{\faculty}{KHOA CÔNG NGHỆ THÔNG TIN}
+\newcommand{\course}{THƯƠNG MẠI ĐIỆN TỬ VÀ ỨNG DỤNG}
+
+\begin{document}
+
+\begin{titlepage}
+\pagestyle{empty}
+\begin{center}
+{\Large \school}\\[0.2cm]
+{\Large \faculty}
+
+\vspace{1.5cm}
+{\large \course}\\[0.4cm]
+\rule{0.8\textwidth}{0.5pt}\\[0.5cm]
+{\LARGE \textbf{BÁO CÁO ĐỒ ÁN}}\\[0.3cm]
+{\huge \textbf{\reporttitle}}\\[0.4cm]
+\rule{0.8\textwidth}{0.5pt}
+
+\vspace{2cm}
+\begin{tabular}{rl}
+Giảng viên hướng dẫn: & Hoàng Mạnh Hà \\
+Sinh viên thực hiện: & 3122560001 - Nguyễn Nam Anh \\
+Lớp: & \textit{(điền lớp của nhóm)} \\
+Nhóm: & \textit{(điền số nhóm)} \\
+\end{tabular}
+
+\vfill
+{\large TP. Hồ Chí Minh, 2026}
+\end{center}
+\end{titlepage}
+
+\pagestyle{fancy}
+\tableofcontents
+\newpage
+
+\section{Lời mở đầu}
+
+Đề tài GreenLife được xây dựng theo mô hình thương mại điện tử B2C, trong đó doanh nghiệp đóng vai trò bán lẻ trực tuyến, còn khách hàng có thể tìm kiếm sản phẩm, tạo tài khoản, thêm sản phẩm vào giỏ hàng, đặt hàng và thanh toán trực tuyến bằng Momo.
+
+Mục tiêu của đồ án không chỉ là hoàn thiện một website bán hàng, mà còn mô phỏng đầy đủ chu trình thương mại điện tử: thu hút khách hàng, quản lý sản phẩm, xử lý đơn hàng, hỗ trợ thanh toán điện tử, quản trị người dùng, đồng thời chú trọng các yêu cầu bảo mật và khả năng mở rộng của hệ thống.
+
+\section{Chương 1: Giới thiệu và tổng quan}
+
+\subsection{Bối cảnh thương mại điện tử}
+
+Thương mại điện tử đã trở thành một phần trọng yếu của kinh doanh hiện đại nhờ khả năng hoạt động liên tục 24/7, mở rộng phạm vi phục vụ vượt ra ngoài giới hạn địa lý, tự động hóa quy trình bán hàng và tạo ra nguồn dữ liệu phong phú phục vụ phân tích hành vi khách hàng. Từ các nội dung học phần, có thể thấy TMĐT không còn là một website bán hàng đơn lẻ mà là một hệ thống gồm nhiều thành phần liên kết: giao diện, dữ liệu, thanh toán, vận chuyển, chăm sóc khách hàng và quản trị.
+
+Sự phát triển của Internet, thiết bị di động, thanh toán số và logistics đã thay đổi hành vi người tiêu dùng. Họ có xu hướng so sánh giá, đọc đánh giá, đặt hàng nhanh và ưu tiên trải nghiệm tiện lợi. Với bối cảnh đó, một hệ thống B2C như GreenLife phù hợp để thể hiện đầy đủ các chức năng cốt lõi của TMĐT trong phạm vi đồ án.
+
+\subsection{Lý do chọn đề tài}
+
+GreenLife hướng đến nhóm khách hàng quan tâm đến sản phẩm xanh, sản phẩm tiêu dùng có nguồn gốc rõ ràng và trải nghiệm mua sắm trực tuyến thân thiện. Đề tài phù hợp với yêu cầu môn học vì có thể mô phỏng trọn vẹn một doanh nghiệp bán lẻ trực tuyến: có danh mục sản phẩm, phân loại hàng hóa, đặt hàng, thanh toán online và khu vực quản trị.
+
+Ngoài ra, đề tài còn cho phép triển khai nhiều nội dung quan trọng của học phần như: thiết kế CSDL, xây dựng API, xác thực người dùng, quản lý trạng thái đơn hàng, tích hợp thanh toán sandbox và phân quyền quản trị.
+
+\subsection{Mục tiêu hệ thống}
+
+Hệ thống GreenLife được xây dựng nhằm đạt các mục tiêu sau:
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item Cung cấp website bán hàng trực tuyến cho khách hàng cá nhân theo mô hình B2C.
+  \item Hỗ trợ tìm kiếm, xem chi tiết sản phẩm, quản lý giỏ hàng và đặt hàng.
+  \item Tích hợp thanh toán điện tử qua MoMo sandbox và hỗ trợ phương thức COD.
+  \item Cho phép người dùng quản lý hồ sơ, địa chỉ và lịch sử mua hàng.
+  \item Cung cấp khu vực quản trị để quản lý sản phẩm, đơn hàng, người dùng và thống kê.
+\end{itemize}
+
+\section{Chương 2: Phân tích mô hình TMĐT}
+
+\subsection{Mô hình kinh doanh B2C}
+
+GreenLife áp dụng mô hình B2C (Business to Consumer), tức doanh nghiệp bán hàng trực tiếp đến người tiêu dùng cuối. Trong mô hình này, doanh nghiệp cần tối ưu ba yếu tố chính: trải nghiệm mua sắm, độ tin cậy của thông tin sản phẩm và tốc độ xử lý đơn hàng. Đây cũng là mô hình phù hợp nhất với đề cương đồ án vì thỏa yêu cầu website thương mại điện tử có giỏ hàng, thanh toán và khu vực quản trị.
+
+\subsection{Khách hàng mục tiêu}
+
+Khách hàng mục tiêu của GreenLife là nhóm người dùng cá nhân có nhu cầu mua hàng trực tuyến, ưu tiên sự tiện lợi, minh bạch và an toàn khi giao dịch. Nhóm này bao gồm:
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item Người mua lẻ muốn tìm sản phẩm theo danh mục hoặc từ khóa.
+  \item Người dùng đã đăng ký tài khoản và muốn theo dõi lịch sử đơn hàng.
+  \item Khách hàng cần thanh toán online hoặc chọn COD tùy theo mức độ tin cậy.
+\end{itemize}
+
+\subsection{Giá trị mang lại}
+
+Hệ thống tạo ra giá trị cho cả khách hàng và doanh nghiệp. Với khách hàng, website giúp mua hàng mọi lúc, mọi nơi; so sánh sản phẩm; lưu địa chỉ mặc định và xem chi tiết trạng thái đơn hàng. Với doanh nghiệp, hệ thống giúp chuẩn hóa quy trình bán hàng, tập trung dữ liệu người dùng, quản lý tồn kho và đo lường hiệu quả qua thống kê quản trị.
+
+\subsection{Quy trình nghiệp vụ tổng quát}
+
+Quy trình nghiệp vụ của GreenLife có thể mô tả theo chuỗi sau:
+
+\begin{center}
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  node distance=1.15cm,
+  box/.style={draw, rounded corners, minimum width=2.4cm, minimum height=0.95cm, align=center, fill=blue!4, font=\small},
+  arrow/.style={-Latex, thick}
+]
+\node[box] (browse) {Khách hàng duyệt sản phẩm};
+\node[box, right=of browse] (cart) {Thêm vào giỏ hàng};
+\node[box, right=of cart] (checkout) {Đặt hàng và chọn thanh toán};
+\node[box, right=of checkout] (pay) {Thanh toán COD / MoMo};
+\node[box, right=of pay] (admin) {Admin xử lý đơn hàng};
+\draw[arrow] (browse) -- (cart);
+\draw[arrow] (cart) -- (checkout);
+\draw[arrow] (checkout) -- (pay);
+\draw[arrow] (pay) -- (admin);
+\end{tikzpicture}
+}%
+\end{center}
+
+\subsection{Mô hình doanh thu và vận hành}
+
+Mô hình doanh thu chủ yếu là bán lẻ trực tuyến. Trong báo cáo học phần, hệ thống có thể mở rộng thêm các nguồn thu như khuyến mãi theo mùa, gói thành viên, bán hàng theo combo hoặc tích hợp marketing liên kết. Về vận hành, mô hình yêu cầu kiểm soát được danh mục, tồn kho, thanh toán và xác nhận đơn hàng, do đó backend cần hỗ trợ phân quyền rõ ràng giữa khách hàng và quản trị viên.
+
+\section{Chương 3: Phân tích hệ thống và cơ sở hạ tầng}
+
+\subsection{Kiến trúc tổng thể}
+
+Hệ thống GreenLife được xây dựng theo kiến trúc tách lớp rõ ràng:
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textbf{Frontend}: React + Vite, điều hướng bằng React Router, quản lý trạng thái bằng Zustand và gọi API bằng Axios.
+  \item \textbf{Backend}: Node.js dùng Express, tổ chức theo mô hình route - controller - service - middleware.
+  \item \textbf{Cơ sở dữ liệu}: PostgreSQL thông qua Prisma ORM.
+  \item \textbf{Lưu trữ ảnh}: hỗ trợ upload ảnh sản phẩm qua Cloudinary.
+\end{itemize}
+
+\subsection{Công nghệ sử dụng}
+
+Từ mã nguồn hiện tại, dự án sử dụng các công nghệ chính sau:
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{>{\bfseries}p{4cm}X}
+\hline
+Thành phần & Công nghệ / vai trò \\
+\hline
+Frontend & React 18, Vite, React Router, Zustand, React Hook Form, Tailwind CSS, Recharts \\
+\hline
+Backend & Node.js, Express, Prisma, JWT, bcrypt, multer, helmet, cors, morgan \\
+\hline
+CSDL & PostgreSQL, quản lý lược đồ bằng Prisma schema và migration \\
+\hline
+Thanh toán & MoMo sandbox qua các route tạo giao dịch, callback và luồng mô phỏng \\
+\hline
+Kiểm thử & Vitest, Testing Library, Supertest cho cả frontend và backend \\
+\hline
+\end{tabularx}
+\caption{Tổng hợp công nghệ trong hệ thống GreenLife}
+\end{table}
+
+\subsection{Cấu trúc module backend}
+
+Backend được chia theo các nhóm chức năng rõ ràng. Router tổng hợp trong \texttt{/api} phân phối đến các module: sản phẩm, danh mục, xác thực, người dùng, giỏ hàng, đơn hàng, thanh toán, upload, admin và wishlist. Tổ chức này giúp mã nguồn dễ bảo trì, đồng thời thuận lợi cho việc mở rộng từng phân hệ sau này.
+
+Các route chính thể hiện ý tưởng chức năng như sau:
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{>{\bfseries}p{4.2cm}X}
+\hline
+Nhóm route & Chức năng \\
+\hline
+/api/products & Xem danh sách, chi tiết sản phẩm, sản phẩm nổi bật, đánh giá; admin thêm/sửa/xóa sản phẩm \\
+\hline
+/api/auth & Đăng ký và đăng nhập tài khoản \\
+\hline
+/api/users & Hồ sơ cá nhân, địa chỉ giao hàng, đổi mật khẩu; admin quản lý người dùng \\
+\hline
+/api/cart & Thêm, sửa, xóa và xóa toàn bộ giỏ hàng \\
+\hline
+/api/orders & Tạo đơn hàng, xem lịch sử, hủy đơn \\
+\hline
+/api/payments & Tạo giao dịch MoMo, mô phỏng thanh toán và callback \\
+\hline
+/api/admin & Dashboard, quản lý đơn hàng, sản phẩm và thống kê \\
+\hline
+/api/upload & Tải ảnh đơn và nhiều ảnh phục vụ quản lý sản phẩm \\
+\hline
+\end{tabularx}
+\caption{Phân rã các nhóm chức năng API}
+\end{table}
+
+\subsection{Thiết kế cơ sở dữ liệu}
+
+% ERD image for database design
+\begin{figure}[H]
+  \centering
+  \resizebox{0.8\textwidth}{!}{\includegraphics{ERD.png}}
+  \caption{Sơ đồ quan hệ thực thể (ERD) của hệ thống GreenLife}
+  \label{fig:erd}
+\end{figure}
+
+Lược đồ Prisma cho thấy hệ thống được xây dựng tương đối đầy đủ cho bài toán bán hàng trực tuyến. Các bảng chính gồm User, Category, Product, Review, Wishlist, Cart, CartItem, Order, OrderItem, Address và Payment. Một số đặc điểm thiết kế đáng chú ý:
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textbf{Product} có trường \texttt{status} để phân biệt ACTIVE / INACTIVE, hỗ trợ quản trị an toàn.
+  \item \textbf{Product.images} là mảng chuỗi, phù hợp với sản phẩm có nhiều ảnh.
+  \item \textbf{Order.shippingAddress} lưu snapshot địa chỉ dưới dạng JSON để giữ nguyên dữ liệu giao hàng tại thời điểm đặt.
+  \item \textbf{Payment} tách riêng khỏi Order để theo dõi phương thức thanh toán, trạng thái giao dịch và mã giao dịch.
+  \item \textbf{Wishlist} và \textbf{Review} giúp tăng mức độ tương tác của người dùng với sản phẩm.
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{>{\bfseries}p{3.2cm}X}
+\hline
+Thực thể & Vai trò chính \\
+\hline
+User & Tài khoản khách hàng và quản trị viên \\
+\hline
+Category & Danh mục và cây phân cấp danh mục \\
+\hline
+Product & Sản phẩm, giá, tồn kho, trạng thái, hình ảnh \\
+\hline
+Cart, CartItem & Giỏ hàng và chi tiết sản phẩm trong giỏ \\
+\hline
+Order, OrderItem & Đơn hàng và chi tiết mua hàng \\
+\hline
+Address & Địa chỉ giao hàng mặc định / lưu nhiều địa chỉ \\
+\hline
+Payment & Theo dõi thanh toán MoMo hoặc COD \\
+\hline
+Review, Wishlist & Đánh giá và danh sách yêu thích \\
+\hline
+\end{tabularx}
+\caption{Các bảng dữ liệu chính của hệ thống}
+\end{table}
+
+\subsection{Quản lý trạng thái dữ liệu}
+
+Trong quá trình triển khai thực tế, việc tách trạng thái sản phẩm ACTIVE / INACTIVE là cần thiết để tránh lộ sản phẩm chưa sẵn sàng ra giao diện công khai. Mô hình này cho phép public API chỉ hiển thị sản phẩm ACTIVE, còn admin dùng các endpoint riêng để cập nhật trạng thái. Cách tổ chức này phù hợp với yêu cầu quản trị an toàn trong thương mại điện tử.
+
+\section{Chương 4: Thiết kế và xây dựng website}
+
+\subsection{Tổ chức giao diện người dùng}
+
+Frontend chia thành các cụm trang chức năng chính:
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item Trang chủ giới thiệu thương hiệu, danh mục và sản phẩm nổi bật.
+  \item Trang danh sách sản phẩm cho phép lọc, tìm kiếm và xem chi tiết.
+  \item Trang giỏ hàng hỗ trợ tăng giảm số lượng, xóa sản phẩm và cập nhật tổng tiền.
+  \item Trang thanh toán cho phép chọn địa chỉ và phương thức thanh toán.
+  \item Trang hồ sơ và lịch sử đơn hàng cho người dùng đã đăng nhập.
+  \item Khu vực admin với dashboard, quản lý sản phẩm, đơn hàng, người dùng và danh mục.
+\end{itemize}
+
+\subsection{Điều hướng và phân quyền}
+
+Hệ thống route phía client được phân tách theo layout: PublicLayout, AuthLayout và AdminLayout. Người dùng khách chỉ được truy cập các trang công khai; người dùng đã đăng nhập mới vào được checkout, hồ sơ và lịch sử mua hàng; quản trị viên được điều hướng sang khu vực admin. Cách tổ chức này vừa làm rõ vai trò người dùng, vừa đơn giản hóa việc bảo vệ route ở cấp giao diện.
+
+\subsection{Luồng chức năng chính}
+
+Luồng nghiệp vụ trong hệ thống bao gồm:
+
+\begin{enumerate}[leftmargin=1.2cm]
+  \item Người dùng đăng ký hoặc đăng nhập bằng email và mật khẩu.
+  \item Người dùng duyệt sản phẩm, mở chi tiết và thêm vào giỏ hàng.
+  \item Tại bước checkout, người dùng chọn địa chỉ giao hàng và phương thức thanh toán.
+  \item Nếu chọn MoMo, hệ thống tạo giao dịch sandbox và chờ callback.
+  \item Đơn hàng sau đó được lưu vào cơ sở dữ liệu với trạng thái phù hợp.
+  \item Quản trị viên xem dashboard, cập nhật trạng thái đơn hàng và quản lý sản phẩm.
+\end{enumerate}
+
+\subsection{Các chức năng triển khai ở backend}
+
+Từ các route và schema, có thể tóm tắt các chức năng kỹ thuật quan trọng như sau:
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item Xác thực người dùng bằng JWT và phân quyền theo vai trò.
+  \item Bảo vệ route bằng middleware verifyToken và authorize.
+  \item Quản lý giỏ hàng theo từng tài khoản.
+  \item Tạo đơn hàng và tách OrderItem để lưu chi tiết sản phẩm đã mua.
+  \item Tích hợp upload ảnh phục vụ sản phẩm và hình minh họa.
+  \item Cung cấp API quản trị thống kê, sản phẩm, đơn hàng và tài khoản.
+\end{itemize}
+
+\subsection{Kiểm thử và chất lượng mã nguồn}
+
+Hai thư mục test phía frontend và backend cho thấy dự án có chú trọng kiểm thử các luồng chính như đăng ký, đăng nhập, giỏ hàng, thanh toán, dashboard admin và API service. Đây là điểm quan trọng trong đồ án TMĐT vì các lỗi ở luồng đặt hàng hoặc thanh toán sẽ ảnh hưởng trực tiếp đến trải nghiệm người dùng và độ tin cậy của hệ thống.
+
+\section{Chương 5: Marketing và tiếp thị điện tử}
+
+\subsection{Mục tiêu marketing}
+
+Trong bối cảnh TMĐT, marketing không chỉ nhằm tăng lượng truy cập mà còn phải tăng tỷ lệ chuyển đổi từ xem sản phẩm sang đặt hàng. Với GreenLife, chiến lược tiếp thị nên tập trung vào ba mục tiêu: thu hút đúng nhóm khách hàng quan tâm đến sản phẩm xanh, xây dựng độ tin cậy cho thương hiệu và duy trì khách hàng quay lại mua hàng.
+
+\subsection{Các kênh đề xuất}
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textbf{SEO}: tối ưu tiêu đề sản phẩm, mô tả danh mục, đường dẫn thân thiện và nội dung blog.
+  \item \textbf{Mạng xã hội}: Facebook, TikTok, Instagram để lan tỏa nội dung giới thiệu sản phẩm và chương trình khuyến mãi.
+  \item \textbf{Email/SMS}: nhắc giỏ hàng, thông báo đơn hàng và chăm sóc sau mua.
+  \item \textbf{Khuyến mãi}: mã giảm giá, flash sale, combo sản phẩm xanh, miễn phí vận chuyển theo ngưỡng giá trị.
+\end{itemize}
+
+\subsection{Nội dung số và độ tin cậy}
+
+Đối với GreenLife, nội dung marketing nên nhấn mạnh vào nguồn gốc sản phẩm, tiêu chí xanh, lợi ích sử dụng và đánh giá thật từ người mua. Việc có trang review, wishlist và lịch sử đơn hàng giúp tăng niềm tin và tạo dữ liệu cho các chiến dịch tiếp thị tái nhắm mục tiêu.
+
+\subsection{Chỉ số cần theo dõi}
+
+Một số KPI phù hợp cho website gồm: số lượt truy cập, tỷ lệ thêm vào giỏ, tỷ lệ hoàn tất đơn hàng, giá trị đơn trung bình, tỷ lệ khách hàng quay lại và tỷ lệ chuyển đổi từ chiến dịch quảng cáo sang mua hàng. Đây là các chỉ số có thể được mở rộng từ dashboard admin trong phiên bản hoàn thiện.
+
+\section{Chương 6: Thanh toán điện tử}
+
+\subsection{Phương thức thanh toán}
+
+Hệ thống hỗ trợ hai phương thức thanh toán chính:
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textbf{COD}: phù hợp với khách mới hoặc đơn hàng cần thanh toán khi nhận hàng.
+  \item \textbf{MoMo sandbox}: phục vụ mô phỏng thanh toán điện tử trong phạm vi đồ án.
+\end{itemize}
+
+\subsection{Luồng thanh toán MoMo}
+
+Theo mã nguồn backend, thanh toán MoMo được tách thành ba phần: tạo giao dịch, mô phỏng thanh toán và callback công khai. Luồng này giúp hệ thống kiểm tra được cả trường hợp thành công và thất bại trong môi trường sandbox.
+
+\begin{center}
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  node distance=1.15cm,
+  box/.style={draw, rounded corners, minimum width=2.4cm, minimum height=0.95cm, align=center, fill=blue!4, font=\small},
+  arrow/.style={-Latex, thick}
+]
+\node[box] (create) {Tạo đơn và yêu cầu thanh toán MoMo};
+\node[box, right=of create] (gateway) {Đi qua sandbox MoMo};
+\node[box, right=of gateway] (callback) {Callback về hệ thống};
+\node[box, right=of callback] (update) {Cập nhật trạng thái đơn hàng / payment};
+\draw[arrow] (create) -- (gateway);
+\draw[arrow] (gateway) -- (callback);
+\draw[arrow] (callback) -- (update);
+\end{tikzpicture}
+}%
+\end{center}
+
+\subsection{Mô hình dữ liệu thanh toán}
+
+Mỗi đơn hàng có thể gắn với một bản ghi Payment duy nhất. Bảng Payment lưu phương thức thanh toán, số tiền, trạng thái PENDING/SUCCESS/FAILED, mã giao dịch và thời điểm thanh toán. Thiết kế này thuận lợi cho việc đối soát giao dịch, xử lý callback và truy vết lỗi thanh toán.
+
+\subsection{Xử lý tình huống thất bại}
+
+Trong thực tế, thanh toán điện tử cần hỗ trợ nhiều trạng thái bất lợi như người dùng đóng trang thanh toán, giao dịch bị từ chối hoặc callback không thành công. Với cấu trúc hiện tại, hệ thống có thể cập nhật trạng thái đơn về FAILED hoặc giữ PENDING chờ người dùng thử lại. Điều này phù hợp với yêu cầu của đề cương về việc thử nghiệm cả tình huống thất bại và thành công.
+
+\section{Chương 7: Bảo mật và pháp lý}
+
+\subsection{Các lớp bảo mật chính}
+
+Hệ thống sử dụng nhiều cơ chế bảo mật ở mức ứng dụng:
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item Mật khẩu được băm bằng bcrypt trước khi lưu.
+  \item JWT dùng cho xác thực người dùng và bảo vệ API.
+  \item Middleware phân quyền theo vai trò CUSTOMER và ADMIN.
+  \item Helmet, CORS và compression giúp tăng cường an toàn và hiệu năng HTTP.
+  \item Route upload kiểm tra xác thực trước khi nhận tệp ảnh.
+\end{itemize}
+
+\subsection{Bảo mật dữ liệu kinh doanh}
+
+Một số dữ liệu nhạy cảm cần được xử lý cẩn trọng gồm mật khẩu, token thanh toán, thông tin địa chỉ giao hàng và trạng thái đơn hàng. Việc lưu snapshot địa chỉ trong Order giúp bảo toàn dữ liệu lịch sử, tránh thay đổi khi khách cập nhật địa chỉ cá nhân sau đó. Đồng thời, tách riêng Payment giúp giảm rủi ro ghi đè thông tin giao dịch.
+
+\subsection{Kiểm soát truy cập}
+
+Hệ thống phân tách rõ quyền công khai và quyền quản trị. Chỉ admin mới được truy cập dashboard thống kê, quản lý sản phẩm hoặc thay đổi trạng thái đơn hàng. Khách hàng chỉ xem được dữ liệu liên quan đến tài khoản của mình. Đây là yêu cầu bắt buộc đối với website TMĐT để tránh lộ dữ liệu và thao tác trái phép.
+
+\subsection{Lưu ý pháp lý}
+
+Về khía cạnh pháp lý, một website TMĐT cần minh bạch về thông tin doanh nghiệp, chính sách mua hàng, chính sách đổi trả, bảo mật thông tin cá nhân và điều khoản thanh toán. Trong phạm vi đồ án, các nội dung này có thể được mô tả ở mức khung và tiếp tục hoàn thiện khi triển khai thực tế.
+
+\section{Chương 8: Đánh giá và hướng phát triển}
+
+\subsection{Kết quả đạt được}
+
+Xét theo yêu cầu học phần, hệ thống GreenLife đã bao phủ được các chức năng chính: hiển thị sản phẩm, đăng ký/đăng nhập, giỏ hàng, đặt hàng, thanh toán sandbox, quản trị sản phẩm, đơn hàng, người dùng và thống kê. Ngoài ra, cấu trúc frontend-backend tách biệt giúp đồ án thể hiện đúng tư duy phát triển ứng dụng web hiện đại.
+
+\subsection{Ưu điểm của hệ thống}
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item Kiến trúc rõ ràng, dễ mở rộng.
+  \item CSDL có đủ các thực thể quan trọng của một hệ thống TMĐT.
+  \item Có phân quyền khách hàng và admin.
+  \item Có hỗ trợ thanh toán sandbox và trạng thái đơn hàng.
+  \item Có kiểm thử ở nhiều lớp chức năng.
+\end{itemize}
+
+\subsection{Hạn chế}
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item Chưa tích hợp đầy đủ các cổng thanh toán ngoài MoMo sandbox.
+  \item Chưa triển khai hạ tầng triển khai production hoàn chỉnh như CI/CD, logging và giám sát.
+  \item Một số tính năng marketing và phân tích còn ở mức đề xuất, chưa tự động hóa sâu.
+\end{itemize}
+
+\subsection{Hướng phát triển}
+
+Trong giai đoạn tiếp theo, hệ thống có thể được mở rộng theo các hướng:
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item Tích hợp thêm VNPay hoặc PayPal để đa dạng phương thức thanh toán.
+  \item Bổ sung thông báo email/SMS cho đơn hàng.
+  \item Tối ưu tìm kiếm sản phẩm và gợi ý sản phẩm liên quan.
+  \item Triển khai dashboard thống kê sâu hơn theo doanh thu, danh mục và thời gian.
+  \item Bổ sung quy trình kiểm thử tự động và triển khai lên nền tảng cloud.
+\end{itemize}
+
+\section{Kết luận}
+
+Đề tài GreenLife đáp ứng tốt yêu cầu của học phần Thương mại điện tử và ứng dụng khi mô phỏng đầy đủ một website B2C có giỏ hàng, thanh toán điện tử, quản trị và quản lý đơn hàng. Thông qua quá trình xây dựng hệ thống, người thực hiện có thể vận dụng đồng thời các kiến thức về mô hình TMĐT, thiết kế cơ sở dữ liệu, phát triển web, bảo mật và thanh toán trực tuyến.
+
+Về mặt báo cáo, nội dung đã được trình bày theo đúng các phần trọng tâm của đề cương: giới thiệu, phân tích mô hình, hạ tầng hệ thống, thiết kế website, marketing, thanh toán điện tử, bảo mật pháp lý và đánh giá hướng phát triển. Đây là nền tảng phù hợp để hoàn thiện slide thuyết trình và chuẩn bị phần demo cuối kỳ.
+
+\section*{Tài liệu tham khảo}
+\begin{enumerate}[leftmargin=1.2cm]
+  \item Tài liệu giảng dạy học phần Thương mại điện tử và ứng dụng, Hoàng Mạnh Hà.
+  \item Tài liệu chính thức của React, Express, Prisma, PostgreSQL và MoMo sandbox.
+\end{enumerate}
+
+\end{document}
