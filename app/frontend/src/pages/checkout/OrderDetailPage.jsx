@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock, MapPin, CreditCard, ExternalLink, Package, ShieldCheck, FileText, XCircle, CheckCircle2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import orderService from '@/api/orderService';
@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 
 const OrderDetailPage = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const clearCart = useCartStore((state) => state.clearCart);
 
@@ -33,7 +34,13 @@ const OrderDetailPage = () => {
         if (order?.id) {
           sessionStorage.removeItem(`momo-pay-url-${order.id}`);
         }
+        const params = new URLSearchParams({
+          resultCode: '0',
+          message: 'Thanh toan MoMo thanh cong',
+          orderId: order?.id ? String(order.id) : ''
+        });
         toast.success('Đã giả lập thanh toán MoMo thành công');
+        navigate(`/return-url?${params.toString()}`);
       } else {
         toast.success('Đã giả lập thanh toán MoMo thất bại');
       }

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -6,8 +6,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useCartStore, useAuthStore } from '@/stores';
 import orderService from '@/api/orderService';
 import { Loader2, ArrowLeft, ShieldCheck, Truck, CreditCard, Banknote } from 'lucide-react';
-import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import authService from '@/api/authService';
 
 // Validation Schema
 const checkoutSchema = z.object({
@@ -26,12 +27,14 @@ const Checkout = () => {
   const { items, getTotalPrice, clearCart } = useCartStore();
   const { user } = useAuthStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
   const isLocalDev = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 
   // Form Setup
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(checkoutSchema),
@@ -40,6 +43,40 @@ const Checkout = () => {
     },
   });
 
+  const { data: addressesData, isLoading: isLoadingAddresses } = useQuery({
+    queryKey: ['myAddresses'],
+    queryFn: authService.getAddresses,
+    enabled: !!user
+  });
+
+  const addresses = addressesData?.data?.addresses || [];
+  const isUsingSavedAddress = selectedAddressId !== null && selectedAddressId !== 'new';
+
+  const formatAddress = (address) => {
+    if (!address) return '';
+    const detail = address.detail || address.address || '';
+    const city = address.city ? `, ${address.city}` : '';
+    return `${detail}${city}`;
+  };
+
+  const applyAddressToForm = (address) => {
+    setValue('fullName', address?.receiver || user?.fullName || user?.name || '');
+    setValue('phone', address?.phone || user?.phone || '');
+    setValue('address', formatAddress(address));
+  };
+
+  const handleSelectSavedAddress = (address) => {
+    setSelectedAddressId(address.id);
+    applyAddressToForm(address);
+  };
+
+  const handleSelectNewAddress = () => {
+    setSelectedAddressId('new');
+    setValue('fullName', user?.fullName || user?.name || '');
+    setValue('phone', user?.phone || '');
+    setValue('address', '');
+  };
+
   // Redirect if cart is empty
   useEffect(() => {
     if (items.length === 0) {
@@ -47,9 +84,25 @@ const Checkout = () => {
     }
   }, [items, navigate]);
 
+  useEffect(() => {
+    if (selectedAddressId !== null) return;
+
+    if (addresses.length > 0) {
+      const defaultAddress = addresses.find((address) => address.isDefault) || addresses[0];
+      handleSelectSavedAddress(defaultAddress);
+      return;
+    }
+
+    handleSelectNewAddress();
+  }, [addresses, selectedAddressId]);
+
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
+      const selectedAddress = isUsingSavedAddress
+        ? addresses.find((address) => address.id === selectedAddressId)
+        : null;
+
       const orderData = {
         ...data,
         email: data.email || user?.email,
@@ -59,6 +112,18 @@ const Checkout = () => {
           price: item.price
         })),
         totalAmount: getTotalPrice(),
+        ...(selectedAddress
+          ? {
+            shippingAddress: {
+              fullName: selectedAddress.receiver,
+              receiver: selectedAddress.receiver,
+              phone: selectedAddress.phone,
+              detail: selectedAddress.detail,
+              city: selectedAddress.city,
+              email: data.email || user?.email || ''
+            }
+          }
+          : {})
       };
 
       const response = await orderService.createOrder(orderData);
@@ -124,14 +189,78 @@ const Checkout = () => {
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4">
+                  {/* Saved Addresses */}
+                  {isLoadingAddresses && (
+                    <div className="md:col-span-2 text-sm text-gray-500">Loading saved addresses...</div>
+                  )}
+
+                  {!isLoadingAddresses && addresses.length > 0 && (
+                    <div className="space-y-3 md:col-span-2">
+                      <label className="text-sm font-medium text-gray-700">Saved Addresses</label>
+                      <div className="space-y-3">
+                        {addresses.map((address) => {
+                          const isSelected = selectedAddressId === address.id;
+                          return (
+                            <label
+                              key={address.id}
+                              className={`flex items-start gap-3 p-4 border rounded-xl cursor-pointer transition-all ${
+                                isSelected
+                                  ? 'border-de-primary bg-de-primary/5'
+                                  : 'border-gray-200 hover:border-de-primary/40'
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name="addressChoice"
+                                checked={isSelected}
+                                onChange={() => handleSelectSavedAddress(address)}
+                                className="mt-1 w-4 h-4 text-de-primary focus:ring-de-primary"
+                              />
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="font-medium text-gray-900">{address.receiver || user?.fullName || user?.name || 'Nguoi nhan'}</p>
+                                  {address.isDefault && (
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">Default</span>
+                                  )}
+                                </div>
+                                <p className="text-sm text-gray-600 mt-1">{address.phone}</p>
+                                <p className="text-sm text-gray-600 mt-1">{formatAddress(address)}</p>
+                              </div>
+                            </label>
+                          );
+                        })}
+
+                        <label
+                          className={`flex items-start gap-3 p-4 border rounded-xl cursor-pointer transition-all ${
+                            selectedAddressId === 'new'
+                              ? 'border-de-primary bg-de-primary/5'
+                              : 'border-gray-200 hover:border-de-primary/40'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="addressChoice"
+                            checked={selectedAddressId === 'new'}
+                            onChange={handleSelectNewAddress}
+                            className="mt-1 w-4 h-4 text-de-primary focus:ring-de-primary"
+                          />
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900">Use a new address</p>
+                            <p className="text-sm text-gray-600 mt-1">Enter a different shipping address for this order.</p>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  )}
                   {/* Full Name */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700">Full Name</label>
                     <input
                       {...register('fullName')}
+                      readOnly={isUsingSavedAddress}
                       className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-de-primary/20 outline-none transition-all ${
                         errors.fullName ? 'border-red-500' : 'border-gray-200 focus:border-de-primary'
-                      }`}
+                      } ${isUsingSavedAddress ? 'bg-gray-50 text-gray-500' : ''}`}
                       placeholder="John Doe"
                     />
                     {errors.fullName && <p className="text-red-500 text-sm">{errors.fullName.message}</p>}
@@ -142,9 +271,10 @@ const Checkout = () => {
                     <label className="text-sm font-medium text-gray-700">Phone Number</label>
                     <input
                       {...register('phone')}
+                      readOnly={isUsingSavedAddress}
                       className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-de-primary/20 outline-none transition-all ${
                         errors.phone ? 'border-red-500' : 'border-gray-200 focus:border-de-primary'
-                      }`}
+                      } ${isUsingSavedAddress ? 'bg-gray-50 text-gray-500' : ''}`}
                       placeholder="0123456789"
                     />
                     {errors.phone && <p className="text-red-500 text-sm">{errors.phone.message}</p>}
@@ -169,9 +299,10 @@ const Checkout = () => {
                     <textarea
                       {...register('address')}
                       rows="3"
+                      readOnly={isUsingSavedAddress}
                       className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-de-primary/20 outline-none transition-all ${
                         errors.address ? 'border-red-500' : 'border-gray-200 focus:border-de-primary'
-                      }`}
+                      } ${isUsingSavedAddress ? 'bg-gray-50 text-gray-500' : ''}`}
                       placeholder="123 Green Street, District 1, HCMC"
                     />
                     {errors.address && <p className="text-red-500 text-sm">{errors.address.message}</p>}

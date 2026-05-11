@@ -66,6 +66,9 @@ describe('RegisterPage Component', () => {
     
     expect(screen.getByText('Create Account')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('John Doe')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('0123456789')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Ho Chi Minh')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('123 Green Street, District 1')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Enter your email')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Create a password')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Confirm your password')).toBeInTheDocument();
@@ -80,6 +83,9 @@ describe('RegisterPage Component', () => {
     await waitFor(() => {
       expect(screen.getByText('Name must be at least 2 characters')).toBeInTheDocument();
       expect(screen.getByText('Email is required')).toBeInTheDocument();
+      expect(screen.getByText('Phone number must be 10 digits')).toBeInTheDocument();
+      expect(screen.getByText('City is required (min 2 chars)')).toBeInTheDocument();
+      expect(screen.getByText('Address must be at least 5 characters')).toBeInTheDocument();
       expect(screen.getAllByText(/Password must be at least 6 characters/).length).toBeGreaterThan(0);
     });
   });
@@ -110,6 +116,9 @@ describe('RegisterPage Component', () => {
     renderRegisterPage();
     
     fireEvent.change(screen.getByPlaceholderText('John Doe'), { target: { value: 'John Doe' } });
+    fireEvent.change(screen.getByPlaceholderText('0123456789'), { target: { value: '0123456789' } });
+    fireEvent.change(screen.getByPlaceholderText('Ho Chi Minh'), { target: { value: 'HCMC' } });
+    fireEvent.change(screen.getByPlaceholderText('123 Green Street, District 1'), { target: { value: '123 Test Street' } });
     fireEvent.change(screen.getByPlaceholderText('Enter your email'), { target: { value: 'john@example.com' } });
     fireEvent.change(screen.getByPlaceholderText('Create a password'), { target: { value: 'password123' } });
     fireEvent.change(screen.getByPlaceholderText('Confirm your password'), { target: { value: 'password123' } });
@@ -120,6 +129,9 @@ describe('RegisterPage Component', () => {
     await waitFor(() => {
       expect(mockRegister).toHaveBeenCalledWith({
         fullName: 'John Doe',
+        phone: '0123456789',
+        city: 'HCMC',
+        address: '123 Test Street',
         email: 'john@example.com',
         password: 'password123'
       }, expect.anything());

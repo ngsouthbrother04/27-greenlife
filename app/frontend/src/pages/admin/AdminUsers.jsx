@@ -3,27 +3,30 @@ import { Search, UserCheck, UserX, Loader2, Edit, Trash2, X, Check } from 'lucid
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import authService from '@/api/authService';
 import toast from 'react-hot-toast';
+import Pagination from '@/components/Pagination';
 
 /**
  * AdminUsers Component
  * 
  * User management page for admin:
- * - List all users/customers
+ * - List all users/customers with pagination (10 per page)
  * - Edit user role
  * - Delete user
  */
 const AdminUsers = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [editingUser, setEditingUser] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: usersData, isLoading } = useQuery({
-    queryKey: ['admin-users'],
-    queryFn: () => authService.getAllUsers(),
+    queryKey: ['admin-users', currentPage],
+    queryFn: () => authService.getAllUsers({ page: currentPage, limit: 10 }),
   });
 
   const users = usersData?.data?.users || [];
+  const pagination = usersData?.pagination || {};
 
   const filteredUsers = users.filter(user => 
     user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -74,6 +77,11 @@ const AdminUsers = () => {
     }
   };
 
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    setSearchTerm(''); // Reset search when paginating
+  };
+
   return (
     <div className="space-y-6 relative">
       <h1 className="text-2xl font-bold text-gray-900">Quản lý người dùng</h1>
@@ -99,67 +107,79 @@ const AdminUsers = () => {
             <Loader2 className="w-8 h-8 animate-spin text-de-primary" />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Người dùng</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Email</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Số điện thoại</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Vai trò</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredUsers.length === 0 ? (
+          <div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                      Không tìm thấy người dùng nào
-                    </td>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Người dùng</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Email</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Số điện thoại</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Vai trò</th>
+                    <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900">Thao tác</th>
                   </tr>
-                ) : (
-                  filteredUsers.map(user => (
-                    <tr key={user.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 font-medium text-gray-900">
-                        <div className="flex items-center gap-3">
-                           <div className="w-8 h-8 rounded-full bg-de-primary/10 flex items-center justify-center text-de-primary font-bold">
-                              {user.fullName?.charAt(0).toUpperCase()}
-                           </div>
-                           {user.fullName}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{user.email}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{user.phone || '-'}</td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                          user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'
-                        }`}>
-                          {user.role}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button 
-                            onClick={() => setEditingUser(user)}
-                            className="p-2 hover:bg-blue-50 text-blue-600 rounded-full transition-colors"
-                            title="Chỉnh sửa"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button 
-                            onClick={() => setShowDeleteConfirm(user.id)}
-                            className="p-2 hover:bg-red-50 text-red-600 rounded-full transition-colors"
-                            title="Xóa"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filteredUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                        {searchTerm ? 'Không tìm thấy người dùng nào' : 'Không có người dùng'}
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    filteredUsers.map(user => (
+                      <tr key={user.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 font-medium text-gray-900">
+                          <div className="flex items-center gap-3">
+                             <div className="w-8 h-8 rounded-full bg-de-primary/10 flex items-center justify-center text-de-primary font-bold">
+                                {user.fullName?.charAt(0).toUpperCase()}
+                             </div>
+                             {user.fullName}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{user.email}</td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{user.phone || '-'}</td>
+                        <td className="px-6 py-4 text-sm">
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                            user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button 
+                              onClick={() => setEditingUser(user)}
+                              className="p-2 hover:bg-blue-50 text-blue-600 rounded-full transition-colors"
+                              title="Chỉnh sửa"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => setShowDeleteConfirm(user.id)}
+                              className="p-2 hover:bg-red-50 text-red-600 rounded-full transition-colors"
+                              title="Xóa"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            
+            {/* Pagination */}
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+              <Pagination 
+                currentPage={pagination.currentPage || 1}
+                totalPages={pagination.totalPages || 1}
+                onPageChange={handlePageChange}
+                disabled={isLoading}
+              />
+            </div>
           </div>
         )}
       </div>

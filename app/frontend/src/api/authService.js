@@ -11,7 +11,7 @@ const authService = {
     return response.data; // Expected: { status: 'success', data: { user, token } }
   },
 
-  // Register user: { fullName, email, password, phone }
+  // Register user: { fullName, email, password, phone, address, city }
   register: async (data) => {
     const response = await axiosClient.post('/auth/register', data);
     return response.data;
@@ -57,7 +57,7 @@ const authService = {
   },
 
   setDefaultAddress: async (id) => {
-    const response = await axiosClient.post(`/users/me/addresses/${id}/default`);
+    const response = await axiosClient.post(`/users/me/addresses/${id}/set-default`);
     return response.data;
   },
 

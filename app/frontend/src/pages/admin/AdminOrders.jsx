@@ -1,21 +1,57 @@
 import { useState, useEffect } from 'react';
-import { Search, Eye, Edit, Loader2, Trash2, X, Package } from 'lucide-react';
+import { Search, Eye, Edit, Loader2, Trash2, X, Package, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import orderService from '@/api/orderService';
 import toast from 'react-hot-toast';
 
+const getPaginationItems = (currentPage, totalPages) => {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  if (currentPage <= 4) {
+    return [1, 2, 3, 4, 5, 'ellipsis', totalPages];
+  }
+
+  if (currentPage >= totalPages - 3) {
+    return [1, 'ellipsis', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+  }
+
+  return [1, 'ellipsis', currentPage - 1, currentPage, currentPage + 1, 'ellipsis', totalPages];
+};
+
 const AdminOrders = () => {
   const [statusFilter, setStatusFilter] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const queryClient = useQueryClient();
 
+  const trimmedSearchTerm = searchTerm.trim();
+
+  const queryParams = {
+    page: currentPage,
+    limit: 10,
+    ...(trimmedSearchTerm ? { search: trimmedSearchTerm } : {}),
+    ...(statusFilter ? { status: statusFilter } : {}),
+    ...(fromDate ? { fromDate } : {}),
+    ...(toDate ? { toDate } : {})
+  };
+
   const { data: ordersData, isLoading } = useQuery({
-    queryKey: ['admin-orders', statusFilter],
-    queryFn: () => orderService.getOrders({ status: statusFilter, limit: 100 }),
+    queryKey: ['admin-orders', currentPage, trimmedSearchTerm, statusFilter, fromDate, toDate],
+    queryFn: () => orderService.getOrders(queryParams),
     placeholderData: (previousData) => previousData,
   });
 
   const orders = ordersData?.data?.orders || ordersData?.orders || [];
+  const pagination = ordersData?.pagination || ordersData?.data?.pagination || {};
+  const totalPages = pagination?.totalPages || 1;
+  const totalOrders = pagination?.total || 0;
+  const startItem = totalOrders === 0 ? 0 : (currentPage - 1) * 10 + 1;
+  const endItem = Math.min(currentPage * 10, totalOrders);
+  const paginationItems = getPaginationItems(currentPage, totalPages);
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }) => orderService.updateOrderStatus(id, status),
@@ -37,11 +73,6 @@ const AdminOrders = () => {
     updateStatusMutation.mutate({ id, status: newStatus });
   };
 
-  const filteredOrders = orders.filter(order => 
-    order.id.toString().includes(searchTerm) || 
-    order.user?.fullName?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   const deleteOrderMutation = useMutation({
     mutationFn: (id) => orderService.deleteOrder(id),
     onSuccess: () => {
@@ -54,6 +85,25 @@ const AdminOrders = () => {
   const handleDelete = (id) => {
     if (window.confirm('Are you sure you want to delete this order?')) {
       deleteOrderMutation.mutate(id);
+    }
+  };
+
+  const handleClearFilters = () => {
+    setStatusFilter('');
+    setFromDate('');
+    setToDate('');
+    setSearchTerm('');
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page) => {
+    if (page < 1 || page > totalPages || page === currentPage) {
+      return;
+    }
+
+    setCurrentPage(page);
+    if (typeof window !== 'undefined' && !window.navigator.userAgent.includes('jsdom') && typeof window.scrollTo === 'function') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -73,6 +123,10 @@ const AdminOrders = () => {
       toast.error('Failed to load order details');
     }
   };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [trimmedSearchTerm, statusFilter, fromDate, toDate]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -95,31 +149,74 @@ const AdminOrders = () => {
       <h1 className="text-2xl font-bold text-gray-900">Quản lý đơn hàng</h1>
       
       {/* Filters */}
-      <div className="bg-white rounded-xl p-4 border border-gray-200">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input 
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="grid gap-4 xl:grid-cols-12 xl:items-end">
+          <div className="relative xl:col-span-4">
+            <label className="mb-2 block text-sm font-medium text-gray-700" htmlFor="admin-orders-search">
+              Tìm kiếm
+            </label>
+            <Search className="pointer-events-none absolute left-3 top-[42px] w-5 h-5 text-gray-400" />
+            <input
+              id="admin-orders-search"
               type="text"
               placeholder="Tìm theo mã đơn hoặc tên khách hàng..."
-              className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-de-primary"
+              className="h-12 w-full rounded-xl border border-gray-200 bg-gray-50 pl-10 pr-4 text-sm text-gray-900 outline-none transition-all placeholder:text-gray-400 focus:border-de-primary focus:bg-white focus:ring-2 focus:ring-de-primary/20"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <select 
-            className="px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-de-primary"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="">Tất cả trạng thái</option>
-            <option value="PENDING">Chờ xử lý (PENDING)</option>
-            <option value="PAID">Đã thanh toán (PAID)</option>
-            <option value="SHIPPING">Đang giao (SHIPPING)</option>
-            <option value="DELIVERED">Đã giao (DELIVERED)</option>
-            <option value="COMPLETED">Hoàn thành (COMPLETED)</option>
-            <option value="CANCELLED">Đã hủy (CANCELLED)</option>
-          </select>
+          <div className="xl:col-span-2">
+            <label className="mb-2 block text-sm font-medium text-gray-700" htmlFor="admin-orders-from-date">
+              Từ ngày
+            </label>
+            <input
+              id="admin-orders-from-date"
+              type="date"
+              className="h-12 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 text-sm text-gray-900 outline-none transition-all focus:border-de-primary focus:bg-white focus:ring-2 focus:ring-de-primary/20"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+            />
+          </div>
+          <div className="xl:col-span-2">
+            <label className="mb-2 block text-sm font-medium text-gray-700" htmlFor="admin-orders-to-date">
+              Đến ngày
+            </label>
+            <input
+              id="admin-orders-to-date"
+              type="date"
+              className="h-12 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 text-sm text-gray-900 outline-none transition-all focus:border-de-primary focus:bg-white focus:ring-2 focus:ring-de-primary/20"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+            />
+          </div>
+          <div className="xl:col-span-3">
+            <label className="mb-2 block text-sm font-medium text-gray-700" htmlFor="admin-orders-status">
+              Trạng thái
+            </label>
+            <select
+              id="admin-orders-status"
+              className="h-12 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 text-sm text-gray-900 outline-none transition-all focus:border-de-primary focus:bg-white focus:ring-2 focus:ring-de-primary/20"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">Tất cả trạng thái</option>
+              <option value="PENDING">Chờ xử lý (PENDING)</option>
+              <option value="PAID">Đã thanh toán (PAID)</option>
+              <option value="SHIPPING">Đang giao (SHIPPING)</option>
+              <option value="DELIVERED">Đã giao (DELIVERED)</option>
+              <option value="COMPLETED">Hoàn thành (COMPLETED)</option>
+              <option value="CANCELLED">Đã hủy (CANCELLED)</option>
+            </select>
+          </div>
+          <div className="xl:col-span-1">
+            <button
+              type="button"
+              onClick={handleClearFilters}
+              className="h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+            >
+              Xóa lọc
+            </button>
+          </div>
         </div>
       </div>
       
@@ -143,14 +240,14 @@ const AdminOrders = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {filteredOrders.length === 0 ? (
+                {orders.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                       Không tìm thấy đơn hàng nào
                     </td>
                   </tr>
                 ) : (
-                  filteredOrders.map(order => (
+                  orders.map(order => (
                     <tr key={order.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 font-medium text-gray-900">#{order.id}</td>
                       <td className="px-6 py-4">
@@ -208,6 +305,57 @@ const AdminOrders = () => {
             </table>
           </div>
         )}
+        {!isLoading && totalPages > 1 && (
+          <div className="border-t border-gray-200 bg-gray-50 px-6 py-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm text-gray-600">
+              Hiển thị <span className="font-medium text-gray-900">{startItem}</span>-
+              <span className="font-medium text-gray-900">{endItem}</span> trên
+              <span className="font-medium text-gray-900"> {totalOrders}</span> đơn hàng
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="inline-flex h-10 items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Trước
+              </button>
+              <div className="flex flex-wrap items-center gap-2">
+              {paginationItems.map((item, index) => (
+                item === 'ellipsis' ? (
+                  <span key={`ellipsis-${index}`} className="px-2 text-sm font-medium text-gray-500">
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => handlePageChange(item)}
+                    className={`h-10 min-w-10 rounded-lg px-3 text-sm font-medium transition-colors ${
+                      item === currentPage
+                        ? 'bg-de-primary text-white'
+                        : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {item}
+                  </button>
+                )
+              ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="inline-flex h-10 items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Sau
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Order Details Modal */}
@@ -218,7 +366,7 @@ const AdminOrders = () => {
             <div className="fixed inset-0 bg-black/60 transition-opacity" aria-hidden="true" onClick={() => setSelectedOrder(null)}></div>
 
             {/* Modal Panel */}
-            <div className="relative inline-block w-full max-w-2xl bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 flex flex-col max-h-[90vh]">
+            <div className="relative flex w-full max-w-2xl flex-col max-h-[90vh] overflow-hidden rounded-2xl bg-white text-left shadow-2xl transform transition-all sm:my-8">
               {/* Header (Fixed) */}
               <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white z-10">
                 <h2 className="text-xl font-bold text-gray-900" id="modal-title">Order Details #{selectedOrder.id}</h2>

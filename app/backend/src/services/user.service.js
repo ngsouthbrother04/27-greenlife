@@ -8,19 +8,42 @@ const SALT_ROUNDS = 10;
 
 /**
  * Get all users (Admin only)
+ * @param {number} page - Page number (default: 1)
+ * @param {number} limit - Items per page (default: 10)
  */
-export const getAllUsers = async () => {
-  return await prisma.user.findMany({
-    select: {
-      id: true,
-      fullName: true,
-      email: true,
-      phone: true,
-      role: true,
-      createdAt: true
-    },
-    orderBy: { createdAt: 'desc' }
-  });
+export const getAllUsers = async (page = 1, limit = 10) => {
+  const skip = (page - 1) * limit;
+
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        phone: true,
+        role: true,
+        createdAt: true
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit
+    }),
+    prisma.user.count()
+  ]);
+
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    users,
+    pagination: {
+      currentPage: page,
+      totalPages,
+      totalItems: total,
+      itemsPerPage: limit,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1
+    }
+  };
 };
 
 /**
@@ -28,8 +51,8 @@ export const getAllUsers = async () => {
  */
 export const updateUser = async (userId, data) => {
   const { role, isActive } = data; // Only allow role/status updates
-  // Note: 'isActive' might need a schema update if not present. 
-  // Let's check schema.prisma first? 
+  // Note: 'isActive' might need a schema update if not present.
+  // Let's check schema.prisma first?
   // Assuming 'role' is in schema. 'status' or 'isActive' might not be.
   // Existing schema has 'status' in Product but maybe not User.
   // user.controller.js getAllUsers returns 'role'.

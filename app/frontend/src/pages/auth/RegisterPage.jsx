@@ -13,6 +13,9 @@ import authService from '@/api/authService';
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().min(1, 'Email is required').email('Invalid email address'),
+  phone: z.string().regex(/^[0-9]{10}$/, 'Phone number must be 10 digits'),
+  city: z.string().min(2, 'City is required (min 2 chars)'),
+  address: z.string().min(5, 'Address must be at least 5 characters'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string().min(6, 'Confirm password must be at least 6 characters'),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -126,6 +129,48 @@ const RegisterPage = () => {
           />
           {errors.email && (
             <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
+          )}
+        </div>
+
+        {/* Phone */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-[#121216]">Phone</label>
+          <input
+            {...register('phone')}
+            type="tel"
+            placeholder="0123456789"
+            className={`w-full p-3 rounded-lg border ${errors.phone ? 'border-red-500' : 'border-[#dcdfe4]'} focus:outline-none focus:border-[#405741] transition-colors`}
+          />
+          {errors.phone && (
+            <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>
+          )}
+        </div>
+
+        {/* City */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-[#121216]">City</label>
+          <input
+            {...register('city')}
+            type="text"
+            placeholder="Ho Chi Minh"
+            className={`w-full p-3 rounded-lg border ${errors.city ? 'border-red-500' : 'border-[#dcdfe4]'} focus:outline-none focus:border-[#405741] transition-colors`}
+          />
+          {errors.city && (
+            <p className="text-red-500 text-xs mt-1">{errors.city.message}</p>
+          )}
+        </div>
+
+        {/* Address */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-[#121216]">Shipping Address</label>
+          <textarea
+            {...register('address')}
+            rows="3"
+            placeholder="123 Green Street, District 1"
+            className={`w-full p-3 rounded-lg border ${errors.address ? 'border-red-500' : 'border-[#dcdfe4]'} focus:outline-none focus:border-[#405741] transition-colors`}
+          />
+          {errors.address && (
+            <p className="text-red-500 text-xs mt-1">{errors.address.message}</p>
           )}
         </div>
 

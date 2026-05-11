@@ -167,17 +167,55 @@ export const getDashboardStats = async (range = '30d') => {
  * Get All Orders (Admin)
  */
 export const getAllOrders = async (query) => {
-  const { page = 1, limit = 10, status, fromDate, toDate } = query;
+  const { page = 1, limit = 10, status, fromDate, toDate, search } = query;
   const skip = (Number(page) - 1) * Number(limit);
 
   const where = {};
 
+  const getStartOfDay = (dateString) => {
+    const date = new Date(dateString);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  };
+
+  const getEndOfDay = (dateString) => {
+    const date = new Date(dateString);
+    date.setHours(23, 59, 59, 999);
+    return date;
+  };
+
   if (status) where.status = status;
+
+  if (search) {
+    const searchTerm = String(search).trim();
+
+    if (searchTerm) {
+      const searchConditions = [
+        {
+          user: {
+            is: {
+              OR: [
+                { fullName: { contains: searchTerm, mode: 'insensitive' } },
+                { email: { contains: searchTerm, mode: 'insensitive' } }
+              ]
+            }
+          }
+        }
+      ];
+
+      const orderId = Number(searchTerm);
+      if (!Number.isNaN(orderId)) {
+        searchConditions.push({ id: orderId });
+      }
+
+      where.OR = searchConditions;
+    }
+  }
 
   if (fromDate || toDate) {
     where.createdAt = {};
-    if (fromDate) where.createdAt.gte = new Date(fromDate);
-    if (toDate) where.createdAt.lte = new Date(toDate);
+    if (fromDate) where.createdAt.gte = getStartOfDay(fromDate);
+    if (toDate) where.createdAt.lte = getEndOfDay(toDate);
   }
 
   const [orders, total] = await Promise.all([

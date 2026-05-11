@@ -10,7 +10,11 @@ const { mockPrisma } = vi.hoisted(() => {
       user: {
         findUnique: vi.fn(),
         create: vi.fn()
-      }
+      },
+      address: {
+        create: vi.fn()
+      },
+      $transaction: vi.fn()
     }
   };
 });
@@ -41,22 +45,31 @@ describe('Auth Service', () => {
     const userData = {
       fullName: 'Test User',
       email: 'test@example.com',
-      password: 'password123'
+      password: 'password123',
+      phone: '0123456789',
+      address: '123 Test Street',
+      city: 'HCMC'
     };
 
     it('should register a new user successfully', async () => {
       // Setup mocks
       mockPrisma.user.findUnique.mockResolvedValue(null); // User not exists
       bcrypt.hash.mockResolvedValue('hashed_password');
-      
+
       const createdUser = {
         id: 1,
         fullName: userData.fullName,
         email: userData.email,
         password: 'hashed_password',
-        role: 'CUSTOMER'
+        role: 'CUSTOMER',
+        phone: userData.phone
       };
       mockPrisma.user.create.mockResolvedValue(createdUser);
+      mockPrisma.address.create.mockResolvedValue({ id: 10 });
+      mockPrisma.$transaction.mockImplementation(async (callback) => callback({
+        user: { create: mockPrisma.user.create },
+        address: { create: mockPrisma.address.create }
+      }));
       jwt.sign.mockReturnValue('mock_token');
 
       // Execute
@@ -72,7 +85,18 @@ describe('Auth Service', () => {
           fullName: userData.fullName,
           email: userData.email,
           password: 'hashed_password',
+          phone: userData.phone,
           role: 'CUSTOMER'
+        }
+      });
+      expect(mockPrisma.address.create).toHaveBeenCalledWith({
+        data: {
+          userId: 1,
+          receiver: userData.fullName,
+          phone: userData.phone,
+          detail: userData.address,
+          city: userData.city,
+          isDefault: true
         }
       });
       expect(jwt.sign).toHaveBeenCalledWith(
@@ -80,7 +104,7 @@ describe('Auth Service', () => {
         'test-secret',
         { expiresIn: '1h' }
       );
-      
+
       // Response check
       expect(result.accessToken).toBe('mock_token');
       expect(result.user).not.toHaveProperty('password');
@@ -96,6 +120,27 @@ describe('Auth Service', () => {
       } catch (err) {
         expect(err.statusCode).toBe(StatusCodes.CONFLICT);
         expect(err.message).toBe('Email already exists');
+      }
+    });
+
+    it('should throw BadRequest if shipping info is missing', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+
+      await expect(register({
+        fullName: 'Test User',
+        email: 'test@example.com',
+        password: 'password123'
+      })).rejects.toThrow(ApiError);
+
+      try {
+        await register({
+          fullName: 'Test User',
+          email: 'test@example.com',
+          password: 'password123'
+        });
+      } catch (err) {
+        expect(err.statusCode).toBe(StatusCodes.BAD_REQUEST);
+        expect(err.message).toBe('Shipping info (phone, address, city) is required');
       }
     });
   });

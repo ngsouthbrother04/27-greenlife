@@ -12,11 +12,18 @@ vi.mock('@/stores', () => ({
 
 const { mockCreateOrder } = vi.hoisted(() => ({
   mockCreateOrder: vi.fn(),
+  mockGetAddresses: vi.fn(),
 }));
 
 vi.mock('@/api/orderService', () => ({
   default: {
     createOrder: mockCreateOrder,
+  }
+}));
+
+vi.mock('@/api/authService', () => ({
+  default: {
+    getAddresses: mockGetAddresses,
   }
 }));
 
@@ -41,6 +48,8 @@ describe('CheckoutPage Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     queryClient = new QueryClient();
+
+    mockGetAddresses.mockResolvedValue({ data: { addresses: [] } });
 
     useAuthStore.mockReturnValue({
       user: { email: 'user@example.com' }

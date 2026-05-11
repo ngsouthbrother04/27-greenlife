@@ -31,7 +31,14 @@ describe('api/authService', () => {
     const mockResponse = { data: { status: 'success' } };
     axiosClient.post.mockResolvedValue(mockResponse);
 
-    const payload = { fullName: 'Test', email: 'test@test.com', password: '123', phone: '0123456789' };
+    const payload = {
+      fullName: 'Test',
+      email: 'test@test.com',
+      password: '123',
+      phone: '0123456789',
+      address: '123 Test Street',
+      city: 'HCMC'
+    };
     const result = await authService.register(payload);
 
     expect(axiosClient.post).toHaveBeenCalledWith('/auth/register', payload);
@@ -81,7 +88,7 @@ describe('api/authService', () => {
     axiosClient.post.mockResolvedValue(mockResponse);
 
     const result = await authService.setDefaultAddress('123');
-    expect(axiosClient.post).toHaveBeenCalledWith('/users/me/addresses/123/default');
+    expect(axiosClient.post).toHaveBeenCalledWith('/users/me/addresses/123/set-default');
     expect(result).toEqual(mockResponse.data);
   });
 

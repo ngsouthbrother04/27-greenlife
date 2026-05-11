@@ -20,7 +20,14 @@ describe('Auth Controller', () => {
 
   describe('register', () => {
     it('should register a new user and return 201 status', async () => {
-      req.body = { email: 'test@example.com', password: 'password123', fullName: 'Test Name' };
+      req.body = {
+        email: 'test@example.com',
+        password: 'password123',
+        fullName: 'Test Name',
+        phone: '0123456789',
+        address: '123 Test Street',
+        city: 'HCMC'
+      };
       const expectedResult = { user: { id: 1, email: 'test@example.com' }, accessToken: 'token123' };
 
       authService.register.mockResolvedValue(expectedResult);

@@ -12,7 +12,16 @@ const SALT_ROUNDS = 10;
  * Register a new user
  */
 export const register = async (userData) => {
-  const { fullName, email, password } = userData;
+  const { fullName, email, password, phone, receiver, address, detail, city } = userData;
+  const addressDetail = detail || address;
+
+  if (!fullName || !email || !password) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Full name, email, and password are required');
+  }
+
+  if (!phone || !city || !addressDetail) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Shipping info (phone, address, city) is required');
+  }
 
   // Check if user exists
   const existingUser = await prisma.user.findUnique({
@@ -26,14 +35,34 @@ export const register = async (userData) => {
   // Hash password
   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
-  // Create user
-  const newUser = await prisma.user.create({
-    data: {
-      fullName,
-      email,
-      password: hashedPassword,
-      role: 'CUSTOMER' // Default role
+  const shouldCreateAddress = true;
+
+  // Create user (and optional default address) in a transaction
+  const newUser = await prisma.$transaction(async (tx) => {
+    const createdUser = await tx.user.create({
+      data: {
+        fullName,
+        email,
+        password: hashedPassword,
+        phone: phone || null,
+        role: 'CUSTOMER' // Default role
+      }
+    });
+
+    if (shouldCreateAddress) {
+      await tx.address.create({
+        data: {
+          userId: createdUser.id,
+          receiver: receiver || fullName,
+          phone,
+          detail: addressDetail,
+          city,
+          isDefault: true
+        }
+      });
     }
+
+    return createdUser;
   });
 
   // Generate Token

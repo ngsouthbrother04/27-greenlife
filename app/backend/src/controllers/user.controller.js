@@ -4,11 +4,23 @@ import ApiError from '../utils/ApiError.js';
 
 export const getAll = async (req, res, next) => {
   try {
-    const users = await userService.getAllUsers();
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    if (page < 1 || limit < 1) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: 'error',
+        message: 'Page and limit must be positive numbers'
+      });
+    }
+
+    const { users, pagination } = await userService.getAllUsers(page, limit);
+
     res.status(StatusCodes.OK).json({
       status: 'success',
       results: users.length,
-      data: { users }
+      data: { users },
+      pagination
     });
   } catch (error) {
     next(error);

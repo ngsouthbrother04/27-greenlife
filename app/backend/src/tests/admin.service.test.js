@@ -87,7 +87,7 @@ describe('Admin Service', () => {
       mockPrisma.order.count.mockResolvedValue(1);
 
       const result = await adminService.getAllOrders({ page: 1, limit: 10, status: 'PENDING' });
-      
+
       expect(result.orders).toHaveLength(1);
       expect(result.pagination.total).toBe(1);
       expect(mockPrisma.order.findMany).toHaveBeenCalledWith(expect.objectContaining({
@@ -101,14 +101,70 @@ describe('Admin Service', () => {
 
       await adminService.getAllOrders({ fromDate: '2024-01-01', toDate: '2024-12-31' });
 
-      expect(mockPrisma.order.findMany).toHaveBeenCalledWith(expect.objectContaining({
-        where: {
-          createdAt: {
-            gte: new Date('2024-01-01'),
-            lte: new Date('2024-12-31')
+      const callArgs = mockPrisma.order.findMany.mock.calls[0][0];
+
+      expect(callArgs.where.createdAt.gte.getHours()).toBe(0);
+      expect(callArgs.where.createdAt.gte.getMinutes()).toBe(0);
+      expect(callArgs.where.createdAt.lte.getHours()).toBe(23);
+      expect(callArgs.where.createdAt.lte.getMinutes()).toBe(59);
+      expect(callArgs.where.createdAt.lte.getSeconds()).toBe(59);
+    });
+
+    it('should include the full day when fromDate and toDate are the same', async () => {
+      mockPrisma.order.findMany.mockResolvedValue([]);
+      mockPrisma.order.count.mockResolvedValue(0);
+
+      await adminService.getAllOrders({ fromDate: '2024-01-01', toDate: '2024-01-01' });
+
+      const callArgs = mockPrisma.order.findMany.mock.calls[0][0];
+
+      expect(callArgs.where.createdAt.gte.getHours()).toBe(0);
+      expect(callArgs.where.createdAt.lte.getHours()).toBe(23);
+      expect(callArgs.where.createdAt.lte.getMinutes()).toBe(59);
+    });
+
+    it('should search by order id, customer name, or email', async () => {
+      mockPrisma.order.findMany.mockResolvedValue([]);
+      mockPrisma.order.count.mockResolvedValue(0);
+
+      await adminService.getAllOrders({ search: 'john' });
+
+      const callArgs = mockPrisma.order.findMany.mock.calls[0][0];
+
+      expect(callArgs.where.OR).toHaveLength(1);
+      expect(callArgs.where.OR[0]).toEqual({
+        user: {
+          is: {
+            OR: [
+              { fullName: { contains: 'john', mode: 'insensitive' } },
+              { email: { contains: 'john', mode: 'insensitive' } }
+            ]
           }
         }
-      }));
+      });
+    });
+
+    it('should search by numeric order id as well', async () => {
+      mockPrisma.order.findMany.mockResolvedValue([]);
+      mockPrisma.order.count.mockResolvedValue(0);
+
+      await adminService.getAllOrders({ search: '15' });
+
+      const callArgs = mockPrisma.order.findMany.mock.calls[0][0];
+
+      expect(callArgs.where.OR).toEqual([
+        {
+          user: {
+            is: {
+              OR: [
+                { fullName: { contains: '15', mode: 'insensitive' } },
+                { email: { contains: '15', mode: 'insensitive' } }
+              ]
+            }
+          }
+        },
+        { id: 15 }
+      ]);
     });
   });
 
@@ -144,7 +200,7 @@ describe('Admin Service', () => {
         items: [{ productId: 1, quantity: 2 }]
       };
       mockPrisma.order.findUnique.mockResolvedValue(mockOrder);
-      
+
       await adminService.updateOrderStatus(1, 'SHIPPING');
 
       expect(mockPrisma.product.update).toHaveBeenCalledWith({
@@ -173,7 +229,7 @@ describe('Admin Service', () => {
   describe('deleteOrder', () => {
     it('should delete order and related dependencies via transaction', async () => {
       mockPrisma.order.findUnique.mockResolvedValue({ id: 1 });
-      
+
       const result = await adminService.deleteOrder(1);
 
       expect(mockPrisma.orderItem.deleteMany).toHaveBeenCalledWith({ where: { orderId: 1 } });
