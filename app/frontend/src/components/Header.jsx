@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from 'react';
 import { useCartStore, useAuthStore } from '@/stores';
 import SearchBar from './SearchBar';
 import CategoryMenu from './CategoryMenu';
-import logo from '@/assets/logo.png';
 
 /**
  * Header Component
@@ -52,10 +51,10 @@ const Header = () => {
   return (
     <header className="sticky top-0 z-50 bg-white shadow-[0px_3px_5px_0px_rgba(9,30,66,0.2),0px_0px_1px_0px_rgba(9,30,66,0.31)]">
       <div className="container-custom flex h-[92px] items-center justify-between px-4 lg:px-[130px] relative">
-        {/* Logo */}
+        {/* Logo (text) */}
         <Link to="/" className="flex items-center gap-2 shrink-0 z-20">
-          <div className="h-[60px] relative shrink-0 w-[184px]">
-             <img src={logo} alt="Eco Dental" className="object-contain w-full h-full" />
+          <div className="h-[60px] flex items-center shrink-0">
+             <span className="text-[22px] md:text-[26px] font-bold text-[#405741]">27Greenlife</span>
           </div>
         </Link>
 

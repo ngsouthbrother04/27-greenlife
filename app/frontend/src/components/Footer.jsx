@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { Facebook, Instagram, Twitter, Youtube, Mail, Send } from 'lucide-react';
-import logo from '@/assets/logo.png';
 
 /**
  * Footer Component
@@ -21,9 +20,9 @@ const Footer = () => {
           <div className="flex flex-col gap-4 w-full md:w-[490px]">
              {/* Logo Placeholder - Matches Figma Image Area */}
              {/* Logo - Matches Figma Image Area */}
-            <div className="h-[74px] w-[227px] relative shrink-0">
-                 <img src={logo} alt="Eco Dental" className="object-contain w-full h-full" />
-            </div>
+              <div className="h-[74px] w-auto relative shrink-0 flex items-center">
+                <span className="text-[26px] font-bold text-[#091E42]">27Greenlife</span>
+              </div>
             
             {/* Description */}
             <p className="font-['Poppins'] text-[16px] text-[#091E42] opacity-80 leading-normal whitespace-pre-wrap">
@@ -88,7 +87,7 @@ const Footer = () => {
            <div className="h-[1px] w-full bg-[#091E42] opacity-10"></div>
            
            <div className="flex flex-col md:flex-row justify-between items-center w-full text-[#091E42] opacity-70 text-[14px] font-['Poppins']">
-             <p className="order-2 md:order-1">© 2024, Eco Dental - All rights reserved.</p>
+              <p className="order-2 md:order-1">© 2024, 27Greenlife - All rights reserved.</p>
              
              <div className="flex gap-6 order-1 md:order-2 mb-4 md:mb-0 font-medium">
                <Link to="/terms" className="hover:text-de-primary transition-colors">Terms & Conditions</Link>
